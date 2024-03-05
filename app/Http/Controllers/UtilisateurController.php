@@ -13,10 +13,11 @@ class UtilisateurController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $req)
     {
         //
-        return json_encode(Utilisateur::all());
+        $search = $req->query("search");
+        return json_encode(Utilisateur::where("username", "like", "%$search%")->get());
     }
 
     /**
@@ -103,6 +104,12 @@ class UtilisateurController extends Controller
      */
     public function destroy($id)
     {
-        //
+        try {
+            $user = Utilisateur::find($id);
+            $user->delete();
+            return response(json_encode(["message" => "Utilisateur supprimé", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 }
