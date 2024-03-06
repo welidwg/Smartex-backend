@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\ChaineController;
+use App\Http\Controllers\EtatMachineController;
+use App\Http\Controllers\MachineController;
+use App\Http\Controllers\ReferencesController;
 use App\Http\Controllers\UtilisateurController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,3 +24,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::resource("/utilisateur", UtilisateurController::class);
+Route::resource("/reference", ReferencesController::class);
+Route::resource("/machine", MachineController::class);
+Route::resource("/chaine", ChaineController::class);
+Route::resource("/etat", EtatMachineController::class);
