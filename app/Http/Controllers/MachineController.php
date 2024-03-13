@@ -15,7 +15,7 @@ class MachineController extends Controller
     public function index(Request $req)
     {
         $search = $req->query("search");
-        return json_encode(Machine::where("code", "like", "%$search%")->with("chaine")->get());
+        return json_encode(Machine::where("code", "like", "%$search%")->with("chaine", "etat", "reference")->get());
     }
 
     /**
@@ -75,7 +75,12 @@ class MachineController extends Controller
      */
     public function update(Request $request, Machine $machine)
     {
-        //
+        try {
+            $machine->update($request->all());
+            return response(json_encode(["message" => "Machine modifiée", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 
     /**
@@ -86,6 +91,11 @@ class MachineController extends Controller
      */
     public function destroy(Machine $machine)
     {
-        //
+        try {
+            $machine->delete();
+            return response(json_encode(["message" => "Machine supprimée", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 }

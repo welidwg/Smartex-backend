@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Chaine;
+use App\Models\EtatMachine;
+use App\Models\Role;
 use App\Models\Utilisateur;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -17,7 +20,7 @@ class UtilisateurController extends Controller
     {
         //
         $search = $req->query("search");
-        return json_encode(Utilisateur::where("username", "like", "%$search%")->get());
+        return json_encode(Utilisateur::where("username", "like", "%$search%")->with("role")->get());
     }
 
     /**
@@ -48,7 +51,42 @@ class UtilisateurController extends Controller
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
         }
     }
+    public function init()
+    {
+        //
+        try {
+            $checkRoles = Role::all();
+            $etats = ["En marche", "En panne", "En arrêt"];
+            $chaines = ["CH17", "CH18", "CH16"];
+            $id_admin = 0;
+            if ($checkRoles->count() == 0) {
+                $roles = ["Administrateur", "Technicien"];
 
+                foreach ($roles as $role) {
+                    $new = Role::create(["role" => $role]);
+                    if ($role == "Administrateur") {
+                        $id_admin = $new->id;
+                    }
+                }
+            } else {
+                $admin = Role::where("role", "Administrateur")->first();
+                $id_admin = $admin->id;
+            }
+            foreach ($etats as $etat) {
+                EtatMachine::create(["libelle" => $etat]);
+            }
+            foreach ($chaines as $chaine) {
+                Chaine::create(["libelle" => $chaine]);
+            }
+
+            $data = ["username" => "admin", "password" => "11223344", "role" => $id_admin];
+            $data["password"] = Hash::make($data["password"]);
+            $new = Utilisateur::create($data);
+            return response(json_encode(["message" => "Utilisateur bien crée", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
+    }
     /**
      * Display the specified resource.
      *
@@ -90,7 +128,7 @@ class UtilisateurController extends Controller
             }
             $data["password"] = $newPass;
             $user->update($data);
-            return response(json_encode(["message" => "Utilisateur modifié", "type" => "success"]), 200);
+            return response(json_encode(["message" => "Utilisateur modifié", "type" => "success", "user" => $user]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
         }

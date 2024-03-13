@@ -5,9 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Chaine extends Model
+class HistoriqueMachine extends Model
 {
     use HasFactory;
-    protected $fillable = ["libelle"];
-
 }

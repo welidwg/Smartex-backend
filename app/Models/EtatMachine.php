@@ -8,4 +8,5 @@ use Illuminate\Database\Eloquent\Model;
 class EtatMachine extends Model
 {
     use HasFactory;
+    protected $fillable = ["libelle"];
 }

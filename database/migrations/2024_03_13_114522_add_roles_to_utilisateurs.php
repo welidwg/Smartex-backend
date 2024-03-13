@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateUtilisateurTable extends Migration
+class AddRolesToUtilisateurs extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,8 @@ class CreateUtilisateurTable extends Migration
      */
     public function up()
     {
-        Schema::create('utilisateurs', function (Blueprint $table) {
-            $table->id();
-            $table->string("username", 191)->unique();
-            $table->string("password", 191);
-            $table->timestamps();
+        Schema::table('utilisateurs', function (Blueprint $table) {
+            $table->foreignId("role")->references("id")->on("roles")->onDelete("cascade");
         });
     }
 
@@ -28,6 +25,8 @@ class CreateUtilisateurTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('utilisateurs');
+        Schema::table('utilisateurs', function (Blueprint $table) {
+            //
+        });
     }
 }

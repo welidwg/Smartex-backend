@@ -15,7 +15,7 @@ class ReferencesController extends Controller
     public function index(Request $req)
     {
         $search = $req->query("search");
-        return json_encode(Reference::where("ref", "like", "%$search%")->get());
+        return json_encode(Reference::where("ref", "like", "%$search%")->with("machines.reference", "machines.etat", "machines.chaine")->get());
     }
 
     /**
@@ -87,7 +87,7 @@ class ReferencesController extends Controller
         try {
             $ref = Reference::find($id);
             $ref->update($request->all());
-            return response(json_encode(["message" => "Référence modifié", "type" => "success"]), 200);
+            return response(json_encode(["message" => "Référence modifiée", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
         }

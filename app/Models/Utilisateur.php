@@ -2,12 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Passport\HasApiTokens;
 
-class Utilisateur extends Model
+class Utilisateur extends Authenticatable
 {
-    use HasFactory;
-    
-    protected $fillable=["username","password","role"];
+    use HasApiTokens, HasFactory, Notifiable;
+
+    protected $fillable = ["username", "password", "role"];
+    function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, "role");
+    }
 }

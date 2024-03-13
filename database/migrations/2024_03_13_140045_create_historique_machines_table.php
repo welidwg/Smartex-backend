@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateUtilisateurTable extends Migration
+class CreateHistoriqueMachinesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,11 @@ class CreateUtilisateurTable extends Migration
      */
     public function up()
     {
-        Schema::create('utilisateurs', function (Blueprint $table) {
+        Schema::create('historique_machines', function (Blueprint $table) {
             $table->id();
-            $table->string("username", 191)->unique();
-            $table->string("password", 191);
+            $table->foreignId("id_machine")->references("id")->on("roles")->onDelete("cascade");
+            $table->text("historique");
+            $table->dateTime("date_heure");
             $table->timestamps();
         });
     }
@@ -28,6 +29,6 @@ class CreateUtilisateurTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('utilisateurs');
+        Schema::dropIfExists('historique_machines');
     }
 }

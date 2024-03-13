@@ -17,4 +17,12 @@ class Machine extends Model
     {
         return $this->belongsTo(Chaine::class, "id_chaine");
     }
+    function reference(): BelongsTo
+    {
+        return $this->belongsTo(Reference::class, "id_reference");
+    }
+    function etat(): BelongsTo
+    {
+        return $this->belongsTo(EtatMachine::class, "id_etat");
+    }
 }

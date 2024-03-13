@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\ChaineController;
 use App\Http\Controllers\EtatMachineController;
+use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MachineController;
 use App\Http\Controllers\ReferencesController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UtilisateurController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -23,8 +25,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::resource("/utilisateur", UtilisateurController::class);
-Route::resource("/reference", ReferencesController::class);
-Route::resource("/machine", MachineController::class);
-Route::resource("/chaine", ChaineController::class);
-Route::resource("/etat", EtatMachineController::class);
+Route::middleware(["auth:api"])->group(function () {
+    Route::resource("/utilisateur", UtilisateurController::class);
+    Route::resource("/reference", ReferencesController::class);
+    Route::resource("/machine", MachineController::class);
+    Route::resource("/chaine", ChaineController::class);
+    Route::resource("/etat", EtatMachineController::class);
+    Route::resource("/role", RoleController::class);
+    Route::post("/logout", [LoginController::class, "logout"])->name("logout");
+});
+
+Route::post("/login", [LoginController::class, "login"])->name("login");
+Route::post("/init", [UtilisateurController::class, "init"])->name("init");
