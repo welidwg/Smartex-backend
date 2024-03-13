@@ -15,7 +15,7 @@ class CreateHistoriqueMachinesTable extends Migration
     {
         Schema::create('historique_machines', function (Blueprint $table) {
             $table->id();
-            $table->foreignId("id_machine")->references("id")->on("roles")->onDelete("cascade");
+            $table->foreignId("id_machine")->references("id")->on("machines")->onDelete("cascade");
             $table->text("historique");
             $table->dateTime("date_heure");
             $table->timestamps();

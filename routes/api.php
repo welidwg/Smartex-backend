@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ChaineController;
 use App\Http\Controllers\EtatMachineController;
+use App\Http\Controllers\HistoriqueMachineController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MachineController;
 use App\Http\Controllers\ReferencesController;
@@ -28,6 +29,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware(["auth:api"])->group(function () {
     Route::resource("/utilisateur", UtilisateurController::class);
     Route::resource("/reference", ReferencesController::class);
+    Route::resource("/historique", HistoriqueMachineController::class);
     Route::resource("/machine", MachineController::class);
     Route::resource("/chaine", ChaineController::class);
     Route::resource("/etat", EtatMachineController::class);

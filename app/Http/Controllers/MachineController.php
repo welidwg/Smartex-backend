@@ -15,7 +15,7 @@ class MachineController extends Controller
     public function index(Request $req)
     {
         $search = $req->query("search");
-        return json_encode(Machine::where("code", "like", "%$search%")->with("chaine", "etat", "reference")->get());
+        return json_encode(Machine::where("code", "like", "%$search%")->with("chaine", "etat", "reference", "historique")->get());
     }
 
     /**
@@ -25,7 +25,7 @@ class MachineController extends Controller
      */
     public function create()
     {
-        //
+        
     }
 
     /**

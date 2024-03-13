@@ -25,4 +25,8 @@ class Machine extends Model
     {
         return $this->belongsTo(EtatMachine::class, "id_etat");
     }
+    function historique(): HasMany
+    {
+        return $this->hasMany(HistoriqueMachine::class, "id_machine");
+    }
 }

@@ -12,9 +12,9 @@ class HistoriqueMachineController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $req)
     {
-        //
+        return json_encode(HistoriqueMachine::where("id_machine", $req->id_machine)->with("machine")->all());
     }
 
     /**
@@ -35,7 +35,12 @@ class HistoriqueMachineController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            HistoriqueMachine::create($request->all());
+            return response(json_encode(["message" => "Historique bien ajouté", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 
     /**
