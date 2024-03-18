@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Machine;
+use App\Models\Echange;
 use Illuminate\Http\Request;
 
-class MachineController extends Controller
+class EchangeController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -14,8 +14,8 @@ class MachineController extends Controller
      */
     public function index(Request $req)
     {
-        $search = $req->query("search");
-        return json_encode(Machine::where("code", "like", "%$search%")->with("chaine", "etat", "reference", "historique", "echanges.chaineFrom", "echanges.chaineTo", "echanges.machine")->get());
+
+        return json_encode(Echange::where("id_machine", $req->id_machine)->get());
     }
 
     /**
@@ -25,6 +25,7 @@ class MachineController extends Controller
      */
     public function create()
     {
+        //
     }
 
     /**
@@ -36,8 +37,8 @@ class MachineController extends Controller
     public function store(Request $request)
     {
         try {
-            Machine::create($request->all());
-            return response(json_encode(["message" => "Machine bien créee", "type" => "success"]), 200);
+            Echange::create($request->all());
+            return response(json_encode(["message" => "Echange bien ajouté", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
         }
@@ -46,10 +47,10 @@ class MachineController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Machine  $machine
+     * @param  \App\Models\Echange  $echange
      * @return \Illuminate\Http\Response
      */
-    public function show(Machine $machine)
+    public function show(Echange $echange)
     {
         //
     }
@@ -57,10 +58,10 @@ class MachineController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\Machine  $machine
+     * @param  \App\Models\Echange  $echange
      * @return \Illuminate\Http\Response
      */
-    public function edit(Machine $machine)
+    public function edit(Echange $echange)
     {
         //
     }
@@ -69,14 +70,14 @@ class MachineController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Machine  $machine
+     * @param  \App\Models\Echange  $echange
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Machine $machine)
+    public function update(Request $request, Echange $echange)
     {
         try {
-            $machine->update($request->all());
-            return response(json_encode(["message" => "Machine modifiée", "type" => "success"]), 200);
+            $echange->update(["isActive" => false]);
+            return response(json_encode(["message" => "Echange est bien annulé", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
         }
@@ -85,16 +86,11 @@ class MachineController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Machine  $machine
+     * @param  \App\Models\Echange  $echange
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Machine $machine)
+    public function destroy(Echange $echange)
     {
-        try {
-            $machine->delete();
-            return response(json_encode(["message" => "Machine supprimée", "type" => "success"]), 200);
-        } catch (\Throwable $th) {
-            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
-        }
+        //
     }
 }

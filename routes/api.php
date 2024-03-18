@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ChaineController;
+use App\Http\Controllers\EchangeController;
 use App\Http\Controllers\EtatMachineController;
 use App\Http\Controllers\HistoriqueMachineController;
 use App\Http\Controllers\LoginController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\MachineController;
 use App\Http\Controllers\ReferencesController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UtilisateurController;
+use App\Models\HistoriqueMachine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,11 +33,17 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/reference", ReferencesController::class);
     Route::resource("/historique", HistoriqueMachineController::class);
     Route::resource("/machine", MachineController::class);
+    Route::resource("/echange", EchangeController::class);
     Route::resource("/chaine", ChaineController::class);
     Route::resource("/etat", EtatMachineController::class);
     Route::resource("/role", RoleController::class);
+    Route::resource("/historique", HistoriqueMachineController::class);
+
     Route::post("/logout", [LoginController::class, "logout"])->name("logout");
 });
 
 Route::post("/login", [LoginController::class, "login"])->name("login");
 Route::post("/init", [UtilisateurController::class, "init"])->name("init");
+Route::get("/hist/all", [HistoriqueMachineController::class, "all"])->name("all");
+Route::get('/estimate/{id_machine}', [HistoriqueMachineController::class, 'getEstimation']);
+

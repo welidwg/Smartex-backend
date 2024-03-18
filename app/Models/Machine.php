@@ -29,4 +29,8 @@ class Machine extends Model
     {
         return $this->hasMany(HistoriqueMachine::class, "id_machine");
     }
+    function echanges(): HasMany
+    {
+        return $this->hasMany(Echange::class, "id_machine");
+    }
 }

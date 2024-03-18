@@ -15,11 +15,20 @@ class HistoriqueMachineFactory extends Factory
     public function definition()
     {
         $machine = Machine::all()->random();
+        $startDateTime = '-5 years';
+        $endDateTime = 'now';
+        $startDate = $this->faker->dateTimeBetween($startDateTime, $endDateTime);
+
+        // Génération de l'heure aléatoire entre 06:00:00 et 18:00:00
+        $startTime = $this->faker->time('H:i:s', '06:00:00');
+        $endTime = $this->faker->time('H:i:s', '18:00:00');
+
+        // Combinaison de la date et de l'heure
+        $dateTime = $startDate->format('Y-m-d') . ' ' . $startTime;
         return [
             'id_machine' => $machine->id,
-            'date_heure' => $this->faker->dateTime(),
-            'historique' => $this->faker->text
-            //
+            'date_heure' => $dateTime,
+            'historique' => $this->faker->realText(50)
         ];
     }
 }
