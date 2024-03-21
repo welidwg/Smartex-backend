@@ -6,6 +6,7 @@ use App\Http\Controllers\EtatMachineController;
 use App\Http\Controllers\HistoriqueMachineController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MachineController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReferencesController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UtilisateurController;
@@ -46,4 +47,5 @@ Route::post("/login", [LoginController::class, "login"])->name("login");
 Route::post("/init", [UtilisateurController::class, "init"])->name("init");
 Route::get("/hist/all", [HistoriqueMachineController::class, "all"])->name("all");
 Route::get('/estimate/{id_machine}', [HistoriqueMachineController::class, 'getEstimation']);
-
+Route::get('/notification/getByRole/{id_role}', [NotificationController::class, 'getByRole']);
+Route::resource("/notification", NotificationController::class);

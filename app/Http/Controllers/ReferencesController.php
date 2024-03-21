@@ -15,7 +15,7 @@ class ReferencesController extends Controller
     public function index(Request $req)
     {
         $search = $req->query("search");
-        return json_encode(Reference::where("ref", "like", "%$search%")->with("machines.reference", "machines.etat", "machines.chaine")->get());
+        return json_encode(Reference::where("ref", "like", "%$search%")->with("machines.reference", "machines.etat", "machines.chaine", "machines.echanges", "machines.historique", "machines.echanges.chaineTo", "machines.echanges.chaineFrom")->get());
     }
 
     /**

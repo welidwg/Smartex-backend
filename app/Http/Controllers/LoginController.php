@@ -32,6 +32,7 @@ class LoginController extends Controller
     {
         try {
             $request->user()->tokens()->delete();
+            Auth::logout();
             return response()->json(['message' => 'Déconnexion réussie', "type" => "success"], 200);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage(), 'type' => "error"], 401);
