@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HistoriqueActivite;
 use App\Models\Reference;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ReferencesController extends Controller
 {
@@ -47,6 +49,9 @@ class ReferencesController extends Controller
             } else {
                 Reference::create($data);
             }
+
+            HistoriqueActivite::create(["activite" => "Ajout de référence " . $ref, "id_machine" => null, "id_user" => Auth::id()]);
+
             return response(json_encode(["message" => "Référence bien créee", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
@@ -86,6 +91,7 @@ class ReferencesController extends Controller
     {
         try {
             $ref = Reference::find($id);
+            HistoriqueActivite::create(["activite" => "Modification de référence " . $ref->ref . " > " . $request->ref, "id_machine" => null, "id_user" => Auth::id()]);
             $ref->update($request->all());
             return response(json_encode(["message" => "Référence modifiée", "type" => "success"]), 200);
         } catch (\Throwable $th) {
@@ -102,8 +108,9 @@ class ReferencesController extends Controller
     public function destroy($id)
     {
         try {
-            $user = Reference::find($id);
-            $user->delete();
+            $ref = Reference::find($id);
+            HistoriqueActivite::create(["activite" => "Suppression référence " . $ref->ref, "id_machine" => null, "id_user" => Auth::id()]);
+            $ref->delete();
             return response(json_encode(["message" => "Référence supprimée", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);

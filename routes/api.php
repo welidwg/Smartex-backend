@@ -3,6 +3,7 @@
 use App\Http\Controllers\ChaineController;
 use App\Http\Controllers\EchangeController;
 use App\Http\Controllers\EtatMachineController;
+use App\Http\Controllers\HistoriqueActiviteController;
 use App\Http\Controllers\HistoriqueMachineController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MachineController;
@@ -39,7 +40,7 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/etat", EtatMachineController::class);
     Route::resource("/role", RoleController::class);
     Route::resource("/historique", HistoriqueMachineController::class);
-
+    Route::resource("/historiqueActivite", HistoriqueActiviteController::class);
     Route::post("/logout", [LoginController::class, "logout"])->name("logout");
 });
 

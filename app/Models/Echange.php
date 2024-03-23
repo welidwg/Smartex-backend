@@ -11,6 +11,7 @@ class Echange extends Model
 {
     use HasFactory;
     protected $fillable = ["id_machine", "id_chaine_from", "id_chaine_to", "date_heure", "isActive"];
+    protected $with = ['chaineFrom', 'chaineTo', "machine"];
 
     function chaineFrom(): BelongsTo
     {
@@ -25,7 +26,7 @@ class Echange extends Model
 
     function machine(): BelongsTo
     {
-        return $this->belongsTo(Machine::class, "id_machine");
+        return $this->belongsTo(Machine::class, "id_machine")->without("echanges");
     }
 
     protected static function boot()

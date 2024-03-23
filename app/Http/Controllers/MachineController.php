@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HistoriqueActivite;
 use App\Models\Machine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class MachineController extends Controller
 {
@@ -15,7 +17,7 @@ class MachineController extends Controller
     public function index(Request $req)
     {
         $search = $req->query("search");
-        return json_encode(Machine::where("code", "like", "%$search%")->with("chaine", "etat", "reference", "historique", "echanges.chaineFrom", "echanges.chaineTo", "echanges.machine")->get());
+        return json_encode(Machine::where("code", "like", "%$search%")->with('historiqueActivite')->get());
     }
 
     /**
@@ -36,7 +38,8 @@ class MachineController extends Controller
     public function store(Request $request)
     {
         try {
-            Machine::create($request->all());
+            $ma = Machine::create($request->all());
+            HistoriqueActivite::create(["activite" => "Ajout de machine", "id_machine" => $ma->id, "id_user" => Auth::id()]);
             return response(json_encode(["message" => "Machine bien créee", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
@@ -76,6 +79,8 @@ class MachineController extends Controller
     {
         try {
             $machine->update($request->all());
+            HistoriqueActivite::create(["activite" => "Modification de machine", "id_machine" => $machine->id, "id_user" => Auth::id()]);
+
             return response(json_encode(["message" => "Machine modifiée", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
@@ -91,6 +96,7 @@ class MachineController extends Controller
     public function destroy(Machine $machine)
     {
         try {
+            HistoriqueActivite::create(["activite" => "Suppression de machine " . $machine->code . "/" . $machine->chaine->libelle, "id_machine" => null, "id_user" => Auth::id()]);
             $machine->delete();
             return response(json_encode(["message" => "Machine supprimée", "type" => "success"]), 200);
         } catch (\Throwable $th) {

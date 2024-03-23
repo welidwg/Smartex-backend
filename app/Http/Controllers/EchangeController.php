@@ -2,8 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewNotificationSent;
 use App\Models\Echange;
+use App\Models\HistoriqueActivite;
+use App\Models\Notification;
+use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\Auth;
 
 class EchangeController extends Controller
 {
@@ -37,7 +43,12 @@ class EchangeController extends Controller
     public function store(Request $request)
     {
         try {
-            Echange::create($request->all());
+            $adminRole = Role::where("role", "Admin")->first();
+            $ex = Echange::create($request->all());
+            HistoriqueActivite::create(["activite" => "Echange de machine", "id_machine" => $request->id_machine, "id_user" => Auth::id()]);
+            $notif = Notification::create(["title" => "Echange de machine", "content" => "La machine " . $ex->machine->code . " est déplacée vers la chaîne : " . $ex->chaineTo->libelle . " par l'utilisateur " . Auth::user()->username, "to_role" => $adminRole->id]);
+            broadcast(new NewNotificationSent($notif))->toOthers();
+
             return response(json_encode(["message" => "Echange bien ajouté", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
@@ -77,6 +88,7 @@ class EchangeController extends Controller
     {
         try {
             $echange->update(["isActive" => false]);
+            HistoriqueActivite::create(["activite" => "Annulation d'échange machine", "id_machine" => $echange->id_machine, "id_user" => Auth::id()]);
             return response(json_encode(["message" => "Echange est bien annulé", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);

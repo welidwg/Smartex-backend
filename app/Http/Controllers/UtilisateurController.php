@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Chaine;
 use App\Models\EtatMachine;
+use App\Models\HistoriqueActivite;
 use App\Models\Role;
 use App\Models\Utilisateur;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class UtilisateurController extends Controller
@@ -46,6 +48,7 @@ class UtilisateurController extends Controller
             $data = $request->all();
             $data["password"] = Hash::make($data["password"]);
             $new = Utilisateur::create($data);
+            HistoriqueActivite::create(["activite" => "Ajout utilisateur " . $new->username, "id_machine" => null, "id_user" => Auth::id()]);
             return response(json_encode(["message" => "Utilisateur bien crée", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
@@ -128,6 +131,8 @@ class UtilisateurController extends Controller
             }
             $data["password"] = $newPass;
             $user->update($data);
+            HistoriqueActivite::create(["activite" => "Modification d'utilisateur " . $user->username, "id_machine" => null, "id_user" => Auth::id()]);
+
             return response(json_encode(["message" => "Utilisateur modifié", "type" => "success", "user" => $user]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
@@ -144,6 +149,7 @@ class UtilisateurController extends Controller
     {
         try {
             $user = Utilisateur::find($id);
+            HistoriqueActivite::create(["activite" => "Suppression d'utilisateur " . $user->username, "id_machine" => null, "id_user" => Auth::id()]);
             $user->delete();
             return response(json_encode(["message" => "Utilisateur supprimé", "type" => "success"]), 200);
         } catch (\Throwable $th) {

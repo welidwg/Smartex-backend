@@ -11,12 +11,24 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Machine extends Model
 {
     use HasFactory;
-    protected $fillable = ["code", "id_etat", "id_reference", "id_chaine", "parc"];
+    protected $fillable = ["code", "id_etat", "id_reference", "id_chaine", "parc", "added_by", "edited_by"];
+    protected $with = ["chaine", "user_added", "user_edited", "reference", "historique", "echanges"];
 
     function chaine(): BelongsTo
     {
         return $this->belongsTo(Chaine::class, "id_chaine");
     }
+
+    function user_added(): BelongsTo
+    {
+        return $this->belongsTo(Utilisateur::class, "added_by")->without("activities");
+    }
+
+    function user_edited(): BelongsTo
+    {
+        return $this->belongsTo(Utilisateur::class, "edited_by")->without("activities");
+    }
+
     function reference(): BelongsTo
     {
         return $this->belongsTo(Reference::class, "id_reference");
@@ -28,6 +40,10 @@ class Machine extends Model
     function historique(): HasMany
     {
         return $this->hasMany(HistoriqueMachine::class, "id_machine");
+    }
+    function historiqueActivite(): HasMany
+    {
+        return $this->hasMany(HistoriqueActivite::class, "id_machine");
     }
     function echanges(): HasMany
     {

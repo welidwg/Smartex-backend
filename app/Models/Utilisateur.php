@@ -15,8 +15,17 @@ class Utilisateur extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = ["username", "password", "role"];
+    protected $with = ["role", "activities"];
+    protected $hidden = [
+        'password',
+    ];
     function role(): BelongsTo
     {
         return $this->belongsTo(Role::class, "role");
+    }
+
+    function activities(): HasMany
+    {
+        return $this->hasMany(HistoriqueActivite::class, "id_user")->without("user");
     }
 }
