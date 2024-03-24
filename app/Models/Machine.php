@@ -12,7 +12,7 @@ class Machine extends Model
 {
     use HasFactory;
     protected $fillable = ["code", "id_etat", "id_reference", "id_chaine", "parc", "added_by", "edited_by"];
-    protected $with = ["chaine", "user_added", "user_edited", "reference", "historique", "echanges"];
+    protected $with = ["chaine", "user_added", "user_edited", "reference", "historique", "echanges", "historiqueActivite"];
 
     function chaine(): BelongsTo
     {
@@ -43,10 +43,10 @@ class Machine extends Model
     }
     function historiqueActivite(): HasMany
     {
-        return $this->hasMany(HistoriqueActivite::class, "id_machine");
+        return $this->hasMany(HistoriqueActivite::class, "id_machine")->without("machine");
     }
     function echanges(): HasMany
     {
-        return $this->hasMany(Echange::class, "id_machine");
+        return $this->hasMany(Echange::class, "id_machine")->without("machine");
     }
 }

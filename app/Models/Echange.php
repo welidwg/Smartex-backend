@@ -26,7 +26,7 @@ class Echange extends Model
 
     function machine(): BelongsTo
     {
-        return $this->belongsTo(Machine::class, "id_machine")->without("echanges");
+        return $this->belongsTo(Machine::class, "id_machine");
     }
 
     protected static function boot()

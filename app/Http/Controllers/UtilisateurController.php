@@ -93,12 +93,12 @@ class UtilisateurController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param  \App\Models\Utilisateur  $machine
      * @return \Illuminate\Http\Response
      */
     public function show($id)
     {
-        //
+        return json_encode(Utilisateur::find($id));
     }
 
     /**

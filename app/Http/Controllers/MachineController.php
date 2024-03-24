@@ -54,7 +54,7 @@ class MachineController extends Controller
      */
     public function show(Machine $machine)
     {
-        //
+        return json_encode($machine);
     }
 
     /**

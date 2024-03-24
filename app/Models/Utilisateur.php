@@ -26,6 +26,6 @@ class Utilisateur extends Authenticatable
 
     function activities(): HasMany
     {
-        return $this->hasMany(HistoriqueActivite::class, "id_user")->without("user");
+        return $this->hasMany(HistoriqueActivite::class, "id_user")->without("user")->without("machine.historiqueActivite");
     }
 }

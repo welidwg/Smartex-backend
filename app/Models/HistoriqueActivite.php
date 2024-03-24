@@ -16,7 +16,7 @@ class HistoriqueActivite extends Model
 
     function machine(): BelongsTo
     {
-        return $this->belongsTo(Machine::class, "id_machine");
+        return $this->belongsTo(Machine::class, "id_machine")->without("historique")->without("historiqueActivite")->without("echanges");
     }
 
     function user(): BelongsTo
