@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\VerifPanne;
 use App\Models\HistoriqueActivite;
 use App\Models\HistoriqueMachine;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ class HistoriqueMachineController extends Controller
         try {
             HistoriqueMachine::create($request->all());
             HistoriqueActivite::create(["activite" => "Ajout historique panne", "id_machine" => $request->id_machine, "id_user" => Auth::id()]);
-
+            dispatch(new VerifPanne());
             return response(json_encode(["message" => "Historique bien ajouté", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
