@@ -39,7 +39,7 @@ class Machine extends Model
     }
     function historique(): HasMany
     {
-        return $this->hasMany(HistoriqueMachine::class, "id_machine");
+        return $this->hasMany(HistoriqueMachine::class, "id_machine")->with("panne");
     }
     function historiqueActivite(): HasMany
     {

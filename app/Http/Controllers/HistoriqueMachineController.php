@@ -18,12 +18,12 @@ class HistoriqueMachineController extends Controller
      */
     public function index(Request $req)
     {
-        return json_encode(HistoriqueMachine::where("id_machine", $req->id_machine)->with("machine")->get());
+        return json_encode(HistoriqueMachine::where("id_machine", $req->id_machine)->with(["machine", "panne"])->get());
     }
 
-    public function all(Request $req)
+    public function all($idmachine)
     {
-        return json_encode(HistoriqueMachine::with("machine")->get());
+        return json_encode(HistoriqueMachine::where("id_machine", $idmachine)->get());
     }
 
     /**
@@ -47,7 +47,7 @@ class HistoriqueMachineController extends Controller
         try {
             HistoriqueMachine::create($request->all());
             HistoriqueActivite::create(["activite" => "Ajout historique panne", "id_machine" => $request->id_machine, "id_user" => Auth::id()]);
-            dispatch(new VerifPanne());
+            //dispatch(new VerifPanne());
             return response(json_encode(["message" => "Historique bien ajouté", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);

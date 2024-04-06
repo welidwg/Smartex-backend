@@ -11,13 +11,16 @@ class HistoriqueMachine extends Model
 {
     use HasFactory, HasFactory;
 
-    protected $fillable = ["id_machine", "historique", "date_heure", "added_by"];
+    protected $fillable = ["id_machine", "date_heure", "added_by", "id_panne"];
 
     function machine(): BelongsTo
     {
         return $this->belongsTo(Machine::class, "id_machine")->without("historique");
     }
-
+    function panne(): BelongsTo
+    {
+        return $this->belongsTo(PanneMachine::class, "id_panne");
+    }
     function user_added(): BelongsTo
     {
         return $this->belongsTo(Utilisateur::class, "added_by");
