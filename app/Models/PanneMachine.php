@@ -8,4 +8,5 @@ use Illuminate\Database\Eloquent\Model;
 class PanneMachine extends Model
 {
     use HasFactory;
+    protected $fillable = ["libelle"];
 }

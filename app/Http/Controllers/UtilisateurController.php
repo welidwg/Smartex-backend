@@ -10,6 +10,7 @@ use App\Models\Utilisateur;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class UtilisateurController extends Controller
 {
@@ -45,6 +46,13 @@ class UtilisateurController extends Controller
     {
         //
         try {
+            $validator = Validator::make($request->all(), Utilisateur::$rules, Utilisateur::$messages);
+            if ($validator->fails()) {
+                return json_encode([
+                    'type' => "error",
+                    'message' => $validator->errors()
+                ]);
+            }
             $data = $request->all();
             $data["password"] = Hash::make($data["password"]);
             $new = Utilisateur::create($data);
@@ -123,8 +131,23 @@ class UtilisateurController extends Controller
     {
         try {
             $user = Utilisateur::find($id);
+            $rules = Utilisateur::$rules;
+            $rules['username'] = $rules['username'] . ',username,' . $id;
+            $validator = Validator::make($request->all(), $rules, Utilisateur::$messages);
+            if ($validator->fails()) {
+                return json_encode([
+                    'type' => "error",
+                    'message' => $validator->errors()
+                ]);
+            }
             $data = $request->all();
             if ($data["newPass"] != "") {
+                if (strlen($data["newPass"]) < 5) {
+                    return json_encode([
+                        'type' => "error",
+                        'message' => ["password" => ["Le mot de passe doit comporter 6 caractères au minimum."]]
+                    ]);
+                }
                 $newPass = Hash::make($data["newPass"]);
             } else {
                 $newPass = $user->password;
