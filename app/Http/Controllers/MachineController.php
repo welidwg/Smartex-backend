@@ -6,6 +6,7 @@ use App\Models\HistoriqueActivite;
 use App\Models\Machine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class MachineController extends Controller
 {
@@ -38,6 +39,13 @@ class MachineController extends Controller
     public function store(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), Machine::$rules, Machine::$messages);
+            if ($validator->fails()) {
+                return json_encode([
+                    'type' => "error",
+                    'message' => $validator->errors()
+                ]);
+            }
             $ma = Machine::create($request->all());
             HistoriqueActivite::create(["activite" => "Ajout de machine", "id_machine" => $ma->id, "id_user" => Auth::id()]);
             return response(json_encode(["message" => "Machine bien créee", "type" => "success"]), 200);
