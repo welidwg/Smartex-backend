@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Chaine;
+use App\Models\Ouvrier;
 use Illuminate\Http\Request;
 
-class ChaineController extends Controller
+class OuvrierController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $req)
+    public function index()
     {
         //
-        $search = $req->query("search");
-        return json_encode(Chaine::where("libelle", "like", "%$search%")->with(["ouvriers.competences.operations.reference", "ouvriers.competences.operations.gamme"])->get());
     }
 
     /**
@@ -43,10 +41,10 @@ class ChaineController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Chaine  $chaine
+     * @param  \App\Models\Ouvrier  $ouvrier
      * @return \Illuminate\Http\Response
      */
-    public function show(Chaine $chaine)
+    public function show(Ouvrier $ouvrier)
     {
         //
     }
@@ -54,10 +52,10 @@ class ChaineController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\Chaine  $chaine
+     * @param  \App\Models\Ouvrier  $ouvrier
      * @return \Illuminate\Http\Response
      */
-    public function edit(Chaine $chaine)
+    public function edit(Ouvrier $ouvrier)
     {
         //
     }
@@ -66,10 +64,10 @@ class ChaineController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Chaine  $chaine
+     * @param  \App\Models\Ouvrier  $ouvrier
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Chaine $chaine)
+    public function update(Request $request, Ouvrier $ouvrier)
     {
         //
     }
@@ -77,10 +75,10 @@ class ChaineController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Chaine  $chaine
+     * @param  \App\Models\Ouvrier  $ouvrier
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Chaine $chaine)
+    public function destroy(Ouvrier $ouvrier)
     {
         //
     }

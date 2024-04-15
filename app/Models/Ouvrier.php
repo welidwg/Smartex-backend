@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Chaine extends Model
+class Ouvrier extends Model
 {
     use HasFactory;
-    protected $fillable = ["libelle"];
-    function ouvriers(): HasMany
+
+    function competences(): HasMany
     {
-        return $this->hasMany(Ouvrier::class, "id_chaine");
+        return $this->hasMany(Competence::class, "id_ouvrier");
     }
+
 }
