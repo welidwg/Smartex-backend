@@ -14,7 +14,7 @@ class CompetenceController extends Controller
      */
     public function index()
     {
-        //
+        return json_encode(Competence::all());
     }
 
     /**
@@ -35,7 +35,12 @@ class CompetenceController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            Competence::create($request->all());
+            return response(json_encode(["message" => "Compétence bien ajoutée", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 
     /**

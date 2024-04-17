@@ -71,16 +71,16 @@ class UtilisateurController extends Controller
             $chaines = ["CH17", "CH18", "CH16"];
             $id_admin = 0;
             if ($checkRoles->count() == 0) {
-                $roles = ["Administrateur", "Technicien"];
+                $roles = ["Admin", "Technicien","Mécanicien"];
 
                 foreach ($roles as $role) {
                     $new = Role::create(["role" => $role]);
-                    if ($role == "Administrateur") {
+                    if ($role == "Admin") {
                         $id_admin = $new->id;
                     }
                 }
             } else {
-                $admin = Role::where("role", "Administrateur")->first();
+                $admin = Role::where("role", "Admin")->first();
                 $id_admin = $admin->id;
             }
             foreach ($etats as $etat) {
@@ -90,7 +90,7 @@ class UtilisateurController extends Controller
                 Chaine::create(["libelle" => $chaine]);
             }
 
-            $data = ["username" => "admin", "password" => "11223344", "role" => $id_admin];
+            $data = ["username" => "admin", "password" => "1234", "role" => $id_admin];
             $data["password"] = Hash::make($data["password"]);
             $new = Utilisateur::create($data);
             return response(json_encode(["message" => "Utilisateur bien crée", "type" => "success"]), 200);

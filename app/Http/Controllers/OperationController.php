@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Operation;
 use Illuminate\Http\Request;
+use PHPUnit\Framework\Constraint\Operator;
 
 class OperationController extends Controller
 {
@@ -14,7 +15,7 @@ class OperationController extends Controller
      */
     public function index()
     {
-        //
+        return json_encode(Operation::all());
     }
 
     /**
@@ -35,7 +36,13 @@ class OperationController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            Operation::create($request->all());
+            //$this->sendToFlutter($notif);
+            return response(json_encode(["message" => "Opération bien créee", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 
     /**

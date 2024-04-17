@@ -12,6 +12,6 @@ class Chaine extends Model
     protected $fillable = ["libelle"];
     function ouvriers(): HasMany
     {
-        return $this->hasMany(Ouvrier::class, "id_chaine");
+        return $this->hasMany(Ouvrier::class, "id_chaine")->with("competences.operations.reference");
     }
 }

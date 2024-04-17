@@ -1,17 +1,21 @@
 <?php
 
 use App\Http\Controllers\ChaineController;
+use App\Http\Controllers\CompetenceController;
 use App\Http\Controllers\EchangeController;
 use App\Http\Controllers\EtatMachineController;
+use App\Http\Controllers\GammeController;
 use App\Http\Controllers\HistoriqueActiviteController;
 use App\Http\Controllers\HistoriqueMachineController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MachineController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OperationController;
 use App\Http\Controllers\PanneMachineController;
 use App\Http\Controllers\ReferencesController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UtilisateurController;
+use App\Models\Gamme;
 use App\Models\HistoriqueMachine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +51,10 @@ Route::middleware(["auth:api"])->group(function () {
     Route::get('/estimate/{id_machine}', [HistoriqueMachineController::class, 'getEstimation']);
     Route::get('/notification/getByRole/{id_role}', [NotificationController::class, 'getByRole']);
     Route::resource("/notification", NotificationController::class);
+    Route::resource("/operation", OperationController::class);
+    Route::resource("/competence", CompetenceController::class);
+    Route::get('/gamme/equilibrage', [GammeController::class, 'equilibrage']);
+    Route::resource("/gamme", GammeController::class);
     Route::post("/logout", [LoginController::class, "logout"])->name("logout");
 });
 

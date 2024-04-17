@@ -10,9 +10,10 @@ class Ouvrier extends Model
 {
     use HasFactory;
 
+    protected $with = ["competences"];
+
     function competences(): HasMany
     {
         return $this->hasMany(Competence::class, "id_ouvrier");
     }
-
 }

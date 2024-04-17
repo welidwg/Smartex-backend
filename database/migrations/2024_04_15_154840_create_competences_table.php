@@ -17,7 +17,7 @@ class CreateCompetencesTable extends Migration
             $table->id();
             $table->foreignId("id_ouvrier")->references("id")->on("ouvriers")->onDelete("cascade");
             $table->foreignId("id_operation")->references("id")->on("operations")->onDelete("cascade");
-            $table->float("competence");
+            $table->float("competence")->nullable()->default(0);
             $table->timestamps();
         });
     }

@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Competence extends Model
 {
     use HasFactory;
+
+    protected $fillable = ["id_ouvrier", "id_operation", "competence"];
+
     function operations(): BelongsTo
     {
         return $this->belongsTo(Operation::class, "id_operation");
