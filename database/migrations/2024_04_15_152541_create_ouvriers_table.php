@@ -17,8 +17,8 @@ class CreateOuvriersTable extends Migration
             $table->id();
             $table->string("matricule");
             $table->string("nom");
-            $table->integer("allure");
-            $table->boolean("present");
+            $table->integer("allure")->default(0);
+            $table->boolean("present")->default(0);
             $table->timestamps();
         });
     }

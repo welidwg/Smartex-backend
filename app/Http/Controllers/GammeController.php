@@ -44,6 +44,7 @@ class GammeController extends Controller
         $qte_par_jour = $qte_par_heure * $nbr_heure_travail;
         $nbr_jours_prevu = round($gamme->quantite / $qte_par_jour, 2);
         $summary = [
+            "qte" => $gamme->quantite,
             "temps" => $gamme->temps, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
             "AllureM" => $allureG, "bfp" => $bfp, 'qteH' => $qte_par_heure,
             "qteJ" => $qte_par_jour, "nbJrs" => $nbr_jours_prevu, "ouvriersList" => $ouvriers, "operations" => $operations

@@ -11,6 +11,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MachineController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OperationController;
+use App\Http\Controllers\OuvrierController;
 use App\Http\Controllers\PanneMachineController;
 use App\Http\Controllers\ReferencesController;
 use App\Http\Controllers\RoleController;
@@ -53,6 +54,7 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/notification", NotificationController::class);
     Route::resource("/operation", OperationController::class);
     Route::resource("/competence", CompetenceController::class);
+    Route::resource("/ouvrier", OuvrierController::class);
     Route::get('/gamme/equilibrage', [GammeController::class, 'equilibrage']);
     Route::resource("/gamme", GammeController::class);
     Route::post("/logout", [LoginController::class, "logout"])->name("logout");
