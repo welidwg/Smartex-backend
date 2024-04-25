@@ -25,6 +25,32 @@ class OuvrierController extends Controller
         }
     }
 
+    public function markPresence(Request $req)
+    {
+        try {
+            $ids = $req->ids;
+            $chaine = "";
+            $chaine_id = 0;
+            foreach ($ids as $id) {
+                $ouv = Ouvrier::where("id", $id)->with("chaine")->first();
+                $ouv->update(["present" => 1]);
+                if ($chaine == "") {
+                    $chaine = $ouv->chaine->libelle;
+                }
+                if ($chaine_id == 0) {
+                    $chaine_id = $ouv->chaine->id;
+                }
+            }
+            if (count($ids) != 0) {
+                Ouvrier::whereNotIn("id", $ids)->where("id_chaine", $chaine_id)->update(["present" => 0]);
+                HistoriqueActivite::create(["activite" => "Marquer la présence des ouvriers du chaîne $chaine", "id_machine" => null, "id_user" => Auth::id()]);
+            }
+            return response(json_encode(["message" => "Présence bien marquée", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
+    }
+
     /**
      * Show the form for creating a new resource.
      *
@@ -92,7 +118,24 @@ class OuvrierController extends Controller
      */
     public function update(Request $request, Ouvrier $ouvrier)
     {
-        //
+        try {
+
+            // $rules = Utilisateur::$rules;
+            // $rules['username'] = $rules['username'] . ',username,' . $id;
+            // $validator = Validator::make($request->all(), $rules, Utilisateur::$messages);
+            // if ($validator->fails()) {
+            //     return json_encode([
+            //         'type' => "error",
+            //         'message' => $validator->errors()
+            //     ]);
+            // }
+            $data = $request->all();
+            $ouvrier->update($data);
+            HistoriqueActivite::create(["activite" => "Modification d'ouvrier " . $ouvrier->nom, "id_machine" => null, "id_user" => Auth::id()]);
+            return response(json_encode(["message" => "Ouvrier bien modifié", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 
     /**
@@ -104,5 +147,12 @@ class OuvrierController extends Controller
     public function destroy(Ouvrier $ouvrier)
     {
         //
+        try {
+            HistoriqueActivite::create(["activite" => "Suppression ouvrier " . $ouvrier->nom, "id_machine" => null, "id_user" => Auth::id()]);
+            $ouvrier->delete();
+            return response(json_encode(["message" => "Ouvrier bien supprimé", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 }

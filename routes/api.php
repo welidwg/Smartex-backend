@@ -54,6 +54,7 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/notification", NotificationController::class);
     Route::resource("/operation", OperationController::class);
     Route::resource("/competence", CompetenceController::class);
+    Route::post("/ouvrier/presence", [OuvrierController::class, "markPresence"]);
     Route::resource("/ouvrier", OuvrierController::class);
     Route::get('/gamme/equilibrage', [GammeController::class, 'equilibrage']);
     Route::resource("/gamme", GammeController::class);

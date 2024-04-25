@@ -23,33 +23,43 @@ class GammeController extends Controller
         $chaine = Chaine::where("libelle", "CH18")->with("ouvriers")->first();
         $nbr_heure_travail = 8;
         $ouvriersPresents = $chaine->ouvriers->where("present", 1);
-        $operations = $gamme->operations;
-        $bf = round($gamme->temps / $ouvriersPresents->count(), 3);
-        $sommeAllure = 0;
-        $ouvriers = [];
-        foreach ($ouvriersPresents as $ouvrier) {
-            $sommeAllure += $ouvrier->allure;
-            array_push($ouvriers,   [
-                "nom" => $ouvrier->nom, "matricule" => $ouvrier->matricule, "allure" => $ouvrier->allure,
-                "competences" => $ouvrier->competences->where("operations.id_gamme", $gamme->id)
-            ]);
+
+        if (count($ouvriersPresents) > 0 && count($ouvriersPresents) > 10) {
+            $operations = $gamme->operations;
+            $bf = round($gamme->temps / $ouvriersPresents->count(), 3);
+            $sommeAllure = 0;
+            $ouvriers = [];
+            foreach ($ouvriersPresents as $ouvrier) {
+                $sommeAllure += $ouvrier->allure;
+                array_push($ouvriers,   [
+                    "nom" => $ouvrier->nom, "matricule" => $ouvrier->matricule, "allure" => $ouvrier->allure,
+                    "competences" => $ouvrier->competences->where("operations.id_gamme", $gamme->id)
+                ]);
+            }
+
+
+
+            $allureG = $sommeAllure / $ouvriersPresents->count();
+            $bfp = round(($bf / $allureG) * 100, 3);
+            foreach ($ouvriers as &$ouv) {
+                $potentiel = round(($ouv["allure"] / $allureG) * 100, 3);
+                $ouv["potentiel"] = $potentiel;
+            }
+            $qte_par_heure = round((($ouvriersPresents->count() * 60) * ($allureG / 100)) / $gamme->temps, 0);
+            $qte_par_jour = $qte_par_heure * $nbr_heure_travail;
+            $nbr_jours_prevu = round($gamme->quantite / $qte_par_jour, 2);
+            $summary = [
+                "type" => "success",
+                "qte" => $gamme->quantite,
+                "temps" => $gamme->temps, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
+                "AllureM" => $allureG, "bfp" => $bfp, 'qteH' => $qte_par_heure,
+                "qteJ" => $qte_par_jour, "nbJrs" => $nbr_jours_prevu, "ouvriersList" => $ouvriers, "operations" => $operations
+            ];
+            return response(json_encode($summary), 201);
         }
-        $allureG = $sommeAllure / $ouvriersPresents->count();
-        $bfp = round(($bf / $allureG) * 100, 3);
-        foreach ($ouvriers as &$ouv) {
-            $potentiel = round(($ouv["allure"] / $allureG) * 100, 3);
-            $ouv["potentiel"] = $potentiel;
-        }
-        $qte_par_heure = round((($ouvriersPresents->count() * 60) * ($allureG / 100)) / $gamme->temps, 0);
-        $qte_par_jour = $qte_par_heure * $nbr_heure_travail;
-        $nbr_jours_prevu = round($gamme->quantite / $qte_par_jour, 2);
-        $summary = [
-            "qte" => $gamme->quantite,
-            "temps" => $gamme->temps, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
-            "AllureM" => $allureG, "bfp" => $bfp, 'qteH' => $qte_par_heure,
-            "qteJ" => $qte_par_jour, "nbJrs" => $nbr_jours_prevu, "ouvriersList" => $ouvriers, "operations" => $operations
-        ];
-        return json_encode($summary);
+
+
+        return response(json_encode(["type" => "error", "message" => "Aucun ouvrier n'est présent dans cette chaîne ou le nombre des ouvriers est insuffisant."]), 501);
     }
     /**
      * Show the form for creating a new resource.
