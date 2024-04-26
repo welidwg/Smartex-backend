@@ -12,12 +12,14 @@ use App\Http\Controllers\MachineController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\OuvrierController;
+use App\Http\Controllers\OuvrierMachineController;
 use App\Http\Controllers\PanneMachineController;
 use App\Http\Controllers\ReferencesController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UtilisateurController;
 use App\Models\Gamme;
 use App\Models\HistoriqueMachine;
+use App\Models\OuvrierMachine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +60,9 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/ouvrier", OuvrierController::class);
     Route::get('/gamme/equilibrage', [GammeController::class, 'equilibrage']);
     Route::resource("/gamme", GammeController::class);
+    Route::get('/ouvrierMachine/ouvrier/{id}', [OuvrierMachineController::class, 'getOuvrierMachineByOuvrierId']);
+    Route::get('/ouvrierMachine/ref/{id}', [OuvrierMachineController::class, 'getOuvrierMachineByRefId']);
+    Route::resource("/ouvrierMachine", OuvrierMachineController::class);
     Route::post("/logout", [LoginController::class, "logout"])->name("logout");
 });
 
