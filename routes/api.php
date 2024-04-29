@@ -67,7 +67,4 @@ Route::middleware(["auth:api"])->group(function () {
 });
 
 Route::post("/login", [LoginController::class, "login"])->name("login");
-Route::get("/test", function () {
-    return json_encode(["test"=>"Hello"]);
-});
 Route::post("/init", [UtilisateurController::class, "init"])->name("init");
