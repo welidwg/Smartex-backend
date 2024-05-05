@@ -60,7 +60,7 @@ class Machine extends Model
     {
         parent::boot();
         static::addGlobalScope('order', function (Builder $builder) {
-            $builder->orderBy('code', 'DESC');
+            $builder->orderBy('code', 'ASC');
         });
     }
 }

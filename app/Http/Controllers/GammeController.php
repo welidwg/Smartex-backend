@@ -27,11 +27,14 @@ class GammeController extends Controller
         if (count($ouvriersPresents) > 0 && count($ouvriersPresents) > 10) {
             $bf = round($gamme->temps / $ouvriersPresents->count(), 3);
             $operations = $gamme->operations;
+            $temps_gamme = 0;
+
             $refs = [];
             $references_info = [];
             foreach ($operations as $operation) {
                 $reference_id = $operation->reference->id;
                 $temps = $operation->temps;
+                $temps_gamme += $temps;
                 if (!isset($references_info[$reference_id])) {
                     $references_info[$reference_id] = [
                         'ref' => $operation->reference->ref,
@@ -75,7 +78,7 @@ class GammeController extends Controller
                 "type" => "success",
                 "refs" => $references_info,
                 "qte" => $gamme->quantite,
-                "temps" => $gamme->temps, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
+                "temps" => $temps_gamme, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
                 "AllureM" => $allureG, "bfp" => $bfp, 'qteH' => $qte_par_heure,
                 "qteJ" => $qte_par_jour, "nbJrs" => $nbr_jours_prevu, "ouvriersList" => $ouvriers, "operations" => $operations
             ];

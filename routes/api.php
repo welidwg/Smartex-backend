@@ -50,13 +50,13 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/historique", HistoriqueMachineController::class);
     Route::resource("/historiqueActivite", HistoriqueActiviteController::class);
     Route::resource("/pannesMachine", PanneMachineController::class);
-    Route::get("/hist/{idmachine}", [HistoriqueMachineController::class, "all"])->name("all");
     Route::get('/estimate/{id_machine}', [HistoriqueMachineController::class, 'getEstimation']);
     Route::get('/notification/getByRole/{id_role}', [NotificationController::class, 'getByRole']);
     Route::resource("/notification", NotificationController::class);
     Route::resource("/operation", OperationController::class);
     Route::resource("/competence", CompetenceController::class);
     Route::post("/ouvrier/presence", [OuvrierController::class, "markPresence"]);
+    Route::post("/ouvrier/presence/auto", [OuvrierController::class, "markPresenceAuto"]);
     Route::resource("/ouvrier", OuvrierController::class);
     Route::get('/gamme/equilibrage', [GammeController::class, 'equilibrage']);
     Route::resource("/gamme", GammeController::class);
@@ -68,3 +68,4 @@ Route::middleware(["auth:api"])->group(function () {
 
 Route::post("/login", [LoginController::class, "login"])->name("login");
 Route::post("/init", [UtilisateurController::class, "init"])->name("init");
+Route::get("/hist/{idmachine}", [HistoriqueMachineController::class, "all"])->name("all");

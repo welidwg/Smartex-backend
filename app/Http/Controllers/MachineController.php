@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewNotificationSent;
+use App\Models\EtatMachine;
 use App\Models\HistoriqueActivite;
 use App\Models\Machine;
+use App\Models\Notification;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -86,10 +90,27 @@ class MachineController extends Controller
     public function update(Request $request, Machine $machine)
     {
         try {
-            $machine->update($request->all());
-            HistoriqueActivite::create(["activite" => "Modification de machine", "id_machine" => $machine->id, "id_user" => Auth::id()]);
+            $current_etat = $machine->etat->libelle;
+            $check_etat = EtatMachine::find($request->id_etat);
+            if ($check_etat->libelle == "En panne") {
+                $content = "La machine " . $machine->code . " est déclarée en panne par l'utilisateur " . Auth::user()->username . ".";
+                $adminId = Role::where("role", "Admin")->first()->id;
+                $techId = Role::where("role", "Technicien")->first()->id;
+                broadcast(new NewNotificationSent(Notification::create(["title" => "Panne machine", "content" => $content, "to_role" => $adminId])))->toOthers();
+                broadcast(new NewNotificationSent(Notification::create(["title" => "Panne machine", "content" => $content, "to_role" => $techId])))->toOthers();
+            }
+            if ($check_etat->libelle == "En marche" && $current_etat == "En panne") {
+                $content = "La machine " . $machine->code . " n'est plus en panne.";
+                $adminId = Role::where("role", "Admin")->first()->id;
+                $techId = Role::where("role", "Technicien")->first()->id;
+                broadcast(new NewNotificationSent(Notification::create(["title" => "Panne machine", "content" => $content, "to_role" => $adminId])))->toOthers();
+                broadcast(new NewNotificationSent(Notification::create(["title" => "Panne machine", "content" => $content, "to_role" => $techId])))->toOthers();
+            }
 
-            return response(json_encode(["message" => "Machine modifiée", "type" => "success"]), 200);
+            $machine->update($request->all());
+            //HistoriqueActivite::create(["activite" => "Modification de machine", "id_machine" => $machine->id, "id_user" => Auth::id()]);
+
+            return response(json_encode(["message" => "Machine modifiée $current_etat " . $check_etat->libelle, "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
         }

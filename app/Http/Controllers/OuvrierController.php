@@ -24,7 +24,28 @@ class OuvrierController extends Controller
             return json_encode(Ouvrier::where("nom", "like", "%$search%")->orWhere("matricule", "like", "%$search%")->with('chaine')->get());
         }
     }
+    public function markPresenceAuto(Request $req)
+    {
+        try {
+            $ouvriers = Ouvrier::where("id_chaine", $req->id_chaine)->get();
 
+            $totalOuvriers = count($ouvriers);
+            $minPresenceOne = 10;
+
+            for ($i = 0; $i < min($minPresenceOne, $totalOuvriers); $i++) {
+                $ouvrier = $ouvriers[$i];
+                $ouvrier->update(["present" => 1]);
+            }
+
+            for ($i = $minPresenceOne; $i < $totalOuvriers; $i++) {
+                $ouvrier = $ouvriers[$i];
+                $ouvrier->update(["present" => mt_rand(0, 1)]);
+            }
+            return response(json_encode(["message" => "Présence bien marquée", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
+    }
     public function markPresence(Request $req)
     {
         try {

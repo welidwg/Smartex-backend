@@ -38,6 +38,7 @@ class VerifPanne implements ShouldQueue
     {
         try {
             $machines = Machine::all();
+
             foreach ($machines as $machine) {
                 $id = $machine->id;
                 $historyRecords = DB::table('historique_machines')
@@ -59,8 +60,14 @@ class VerifPanne implements ShouldQueue
                     $today = strtotime(date('Y-m-d'));
                     $tomorrow = strtotime('+1 day', $today);
                     $afterTomorrow = strtotime('+2 day', $today);
-                    if (strtotime($futureDate) == $today || strtotime($futureDate) == $tomorrow || strtotime($futureDate) == $afterTomorrow) {
-                        $time = strtotime($futureDate) == $today ? "aujourd'hui" : "demain";
+                    $fut = date_create($futureDate);
+                    $tod = date_create(date("Y-m-d"));
+                    $diff = date_diff($tod, $fut);
+                    $diffEnJours = $diff->format('%r%a');
+                    // Extraire la différence en jours
+                    if (strtotime($futureDate) == $today || strtotime($futureDate) == $tomorrow || strtotime($futureDate) == $afterTomorrow || ($diffEnJours > 0 &&  $diffEnJours < 7)) {
+                        echo $diffEnJours . " / ";
+                        $time = strtotime($futureDate) == $today ? "aujourd'hui" : "dans $diffEnJours jours";
                         $content = "La machine " . $machine->code . " peut tomber en panne $time.";
                         $adminId = Role::where("role", "Admin")->first()->id;
                         broadcast(new NewNotificationSent(Notification::create(["title" => "Panne machine", "content" => $content, "to_role" => $adminId])))->toOthers();
@@ -69,6 +76,7 @@ class VerifPanne implements ShouldQueue
             }
         } catch (\Throwable $th) {
             error_log($th);
+            echo $th;
         }
     }
 }
