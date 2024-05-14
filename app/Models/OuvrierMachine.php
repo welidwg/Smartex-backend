@@ -21,4 +21,9 @@ class OuvrierMachine extends Model
     {
         return $this->belongsTo(Reference::class, "id_reference");
     }
+
+    function operations(): BelongsTo
+    {
+        return $this->belongsTo(Operation::class);
+    }
 }

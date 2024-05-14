@@ -16,7 +16,7 @@ class Ouvrier extends Model
 
     function competences(): HasMany
     {
-        return $this->hasMany(Competence::class, "id_ouvrier");
+        return $this->hasMany(OuvrierMachine::class, "id_ouvrier");
     }
 
     function chaine(): BelongsTo

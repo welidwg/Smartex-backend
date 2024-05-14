@@ -23,8 +23,8 @@ class Operation extends Model
         return $this->belongsTo(Gamme::class, "id_gamme");
     }
 
-    function competences(): HasMany
-    {
-        return $this->hasMany(Competence::class, "id_operation");
-    }
+    // function competences(): HasMany
+    // {
+    //     return $this->hasMany(Competence::class, "id_operation");
+    // }
 }

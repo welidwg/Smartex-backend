@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\EtatMachine;
+use App\Models\HistoriqueActivite;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class EtatMachineController extends Controller
 {
@@ -37,7 +39,22 @@ class EtatMachineController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $data = $request->all();
+            $etat = $request->libelle;
+            if (str_contains($etat, ",")) {
+                $etats = explode(",", $etat);
+                foreach ($etats as $e) {
+                    EtatMachine::create(["libelle" => $e]);
+                }
+            } else {
+                EtatMachine::create($data);
+            }
+            HistoriqueActivite::create(["activite" => "Ajout d'état machine " . $etat, "id_machine" => null, "id_user" => Auth::id()]);
+            return response(json_encode(["message" => "Etat machine bien ajoutée", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 
     /**
@@ -80,8 +97,15 @@ class EtatMachineController extends Controller
      * @param  \App\Models\EtatMachine  $etatMachine
      * @return \Illuminate\Http\Response
      */
-    public function destroy(EtatMachine $etatMachine)
+    public function destroy(Request $req, EtatMachine $etatMachine)
     {
-        //
+        try {
+            $etat = EtatMachine::find($req->id);
+            HistoriqueActivite::create(["activite" => "Suppression d'état machine " . $etat->libelle, "id_machine" => null, "id_user" => Auth::id()]);
+            $etat->delete();
+            return response(json_encode(["message" => "Etat supprimée", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 }

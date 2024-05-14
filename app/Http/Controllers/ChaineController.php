@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Chaine;
+use App\Models\HistoriqueActivite;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ChaineController extends Controller
 {
@@ -37,7 +39,22 @@ class ChaineController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $data = $request->all();
+            $etat = $request->libelle;
+            if (str_contains($etat, ",")) {
+                $etats = explode(",", $etat);
+                foreach ($etats as $e) {
+                    Chaine::create(["libelle" => $e]);
+                }
+            } else {
+                Chaine::create($data);
+            }
+            HistoriqueActivite::create(["activite" => "Création de chaîne " . $etat, "id_machine" => null, "id_user" => Auth::id()]);
+            return response(json_encode(["message" => "Chaîne bien créee", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 
     /**
@@ -80,8 +97,15 @@ class ChaineController extends Controller
      * @param  \App\Models\Chaine  $chaine
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Chaine $chaine)
+    public function destroy(Request $req, Chaine $chaine)
     {
-        //
+        try {
+            $chaine = Chaine::find($req->id);
+            HistoriqueActivite::create(["activite" => "Suppression de la chaîne " . $chaine->libelle . " et toutes les éléments liées avec elle.", "id_machine" => null, "id_user" => Auth::id()]);
+            $chaine->delete();
+            return response(json_encode(["message" => "Chaîne et toutes éléments liées sont supprimée", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
     }
 }

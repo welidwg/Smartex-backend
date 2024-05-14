@@ -13,7 +13,7 @@ class Machine extends Model
 {
     use HasFactory;
     protected $fillable = ["code", "id_etat", "id_reference", "id_chaine", "parc", "added_by", "edited_by"];
-    protected $with = ["chaine", "user_added", "user_edited", "reference", "historique", "echanges", "historiqueActivite"];
+    protected $with = ["chaine", "user_added", "user_edited", "reference", "historique", "echanges", "historiqueActivite", "etat"];
     static $rules = [
         'code' => "required|unique:machines",
     ];

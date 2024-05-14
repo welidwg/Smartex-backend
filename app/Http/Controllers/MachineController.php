@@ -110,7 +110,7 @@ class MachineController extends Controller
             $machine->update($request->all());
             //HistoriqueActivite::create(["activite" => "Modification de machine", "id_machine" => $machine->id, "id_user" => Auth::id()]);
 
-            return response(json_encode(["message" => "Machine modifiée $current_etat " . $check_etat->libelle, "type" => "success"]), 200);
+            return response(json_encode(["message" => "Machine modifiée", "type" => "success"]), 200);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
         }
