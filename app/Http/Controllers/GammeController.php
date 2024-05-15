@@ -75,14 +75,121 @@ class GammeController extends Controller
                 $qte_par_jour = $qte_par_heure * $nbr_heure_travail;
                 $nbr_jours_prevu = round($gamme->quantite / $qte_par_jour, 2);
                 $equilibrage = [];
+                $arr = [];
+                $machineCount = [];
+                $reste = [];
+                $reste["operation"] = [];
+                $reste["valeur"] = 0;
+                foreach ($ouvriers as $ouvrier) {
+                    $charge = 0;
+
+                    $potentiel = $ouvrier["potentiel_max"];
+                    if (!isset($arr[$ouvrier["nom"]])) {
+                        $arr[$ouvrier["nom"]] = [];
+                    }
+                    //verifier le reste
+                    if ($reste["valeur"] != 0) {
+                        foreach ($reste["operation"] as $o) {
+                            //print_r($o);
+                            array_push($arr[$ouvrier["nom"]], ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]]);
+                        }
+                        $charge += $reste["valeur"];
+                        $reste["operation"] = [];
+                        $reste["valeur"] = 0;
+                    }
+                    foreach ($operations as $op) {
+                        $operationExiste = false;
+                        //verifier si l'opération est déjà accordée
+                        foreach ($arr as $k => $v) {
+                            foreach ($arr[$k] as $data) {
+                                if (isset($data["operation"]) && $data["operation"] === $op->libelle) {
+                                    $operationExiste = true;
+                                    break;
+                                }
+                            }
+                            if ($operationExiste) {
+                                break;
+                            }
+                        }
+                        if ($operationExiste) {
+                            continue;
+                        }
+                        //fin verif operation
+
+                        //distribution de VT
+                        if (($potentiel - $charge) > 0.2) {
+                            if (($op->temps + $charge) <= ($potentiel + 0.2)) {
+                                $charge += $op->temps;
+                            } else {
+                                $tmp = $op->temps;
+                                do {
+                                    $tmp -= 0.1;
+                                } while (($charge + $tmp) > $potentiel);
+                                $charge += $tmp;
+                                array_push($reste["operation"], ["libelle" => $op->libelle, "machine" => $op->reference->ref]);
+                                // $reste["operation"] = ["libelle" => $op->libelle, "machine" => $op->reference->ref];
+                                $reste["valeur"] = $op->temps - $tmp;
+                                $tmp = 0;
+                            }
+
+                            array_push($arr[$ouvrier["nom"]], ["operation" => $op->libelle, "temps" => $op->temps, "machine" => $op->reference->ref]);
+                        } else {
+                            break;
+                        }
+                    }
+                    $saturation = $charge * 100 / $potentiel;
+                    array_push($arr[$ouvrier["nom"]], ["charge" => $charge, "pot" => $potentiel, "sat" => $saturation]);
+
+                    $charge = 0;
+                }
+                $machinesUniques = [];
+                $nom = "";
+                // foreach ($arr as $nomOuvrier => $ops) {
+                //     $nom = $nomOuvrier;
+                //     foreach ($ops as $operation) {
+                //         if (isset($operation['machine'])) {
+
+                //             $machine = $operation['machine'];
+                //             if (!isset($machinesUniques[$machine])) {
+                //                 $machinesUniques[$machine] = 0;
+                //             }
+
+                //             if ($nom != $nomOuvrier) {
+                //                 $machinesUniques[$machine]++;
+                //                 $nom = "";
+                //             }
+                //         }
+                //     }
+                // }
+                $totalMachineCount = []; // Compteur global des machines par ouvriers
+
+                foreach ($arr as $nomOuvrier => $ops) {
+                    $machinesUniques = [];
+                    foreach ($ops as $operation) {
+                        if (isset($operation['machine'])) {
+                            $machine = $operation['machine'];
+                            if (!in_array($machine, $machinesUniques)) {
+                                $machinesUniques[] = $machine;
+                                // Comptez la machine globalement
+                                if (!isset($totalMachineCount[$machine])) {
+                                    $totalMachineCount[$machine] = 0;
+                                }
+                                $totalMachineCount[$machine]++;
+                            }
+                        }
+                    }
+                }
 
                 $summary = [
+                    "eq" => $arr,
                     "type" => "success",
+                    "reste" => $reste,
+                    "test" => $totalMachineCount,
                     "refs" => $references_info,
-                    "qte" => $gamme->quantite,
-                    "temps" => $temps_gamme, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
-                    "AllureM" => $allureG, "bfp" => $bfp, 'qteH' => $qte_par_heure,
-                    "qteJ" => $qte_par_jour, "nbJrs" => $nbr_jours_prevu, "ouvriersList" => $ouvriers, "operations" => $operations
+                    // "qte" => $gamme->quantite,
+                    // "temps" => $temps_gamme, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
+                    // "AllureM" => $allureG, "bfp" => $bfp, 'qteH' => $qte_par_heure,
+                    // "qteJ" => $qte_par_jour, "nbJrs" => $nbr_jours_prevu, "ouvriersList" => $ouvriers, "operations" => $operations
                 ];
                 return response(json_encode($summary), 201);
             }
