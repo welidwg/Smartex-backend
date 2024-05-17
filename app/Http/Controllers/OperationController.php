@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Operation;
+use App\Models\Reference;
 use Illuminate\Http\Request;
 use PHPUnit\Framework\Constraint\Operator;
 
@@ -37,9 +38,23 @@ class OperationController extends Controller
     public function store(Request $request)
     {
         try {
-            Operation::create($request->all());
-            //$this->sendToFlutter($notif);
-            return response(json_encode(["message" => "Opération bien créee", "type" => "success"]), 200);
+            if ($request->reference != "") {
+                $id_ref = 0;
+                $check = Reference::where("ref", $request->reference)->first();
+                if ($check) {
+                    $id_ref = $check->id;
+                } else {
+                    $new = Reference::create(["ref" => $request->reference]);
+                    $id_ref = $new->id;
+                }
+                $data = $request->all();
+                $data["id_reference"] = $id_ref;
+                Operation::create($data);
+                return response(json_encode($data), 201);
+            } else {
+                Operation::create($request->all());
+                return response(json_encode(["message" => "Opération bien créee", "type" => "success"]), 200);
+            }
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
         }

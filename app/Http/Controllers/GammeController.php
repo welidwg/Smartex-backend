@@ -22,16 +22,20 @@ class GammeController extends Controller
     public function equilibrage()
     {
         try {
-            $gamme = Gamme::where("id", 2)->with(["operations"])->first();
+            $gamme = Gamme::where("id", 3)->with(["operations"])->first();
             $chaine = Chaine::where("libelle", "CH18")->with("ouvriers")->first();
             $nbr_heure_travail = 8;
             $ouvriersPresents = $chaine->ouvriers->where("present", 1);
-
-            if (count($ouvriersPresents) > 10) {
+            $maxOperationsPerWorker = 3;
+            $operationsCount = $gamme->operations->count();
+            $workersNeeded = ceil($operationsCount / $maxOperationsPerWorker);
+            if (count($ouvriersPresents) >= $workersNeeded) {
                 $bf = round($gamme->temps / $ouvriersPresents->count(), 3);
                 $operations = $gamme->operations;
                 $temps_gamme = 0;
                 $references_info = [];
+
+                //verif besoin machines
                 foreach ($operations as $operation) {
                     $reference_id = $operation->reference->id;
                     $temps = $operation->temps;
@@ -47,10 +51,13 @@ class GammeController extends Controller
                     $references_info[$reference_id]['count']++;
                     $references_info[$reference_id]['total_temps'] += $temps;
                 }
+
                 foreach ($references_info as $key => $value) {
                     $references_info[$key]['total_temps'] = round($references_info[$key]['total_temps'], 4);
                     $references_info[$key]["besoin"] = ceil($references_info[$key]["total_temps"] / $bf);
                 }
+
+                //
                 $sommeAllure = 0;
                 $ouvriers = [];
                 foreach ($ouvriersPresents as $ouvrier) {
@@ -65,6 +72,7 @@ class GammeController extends Controller
 
                 $allureG = round($sommeAllure / $ouvriersPresents->count(), 2);
                 $bfp = round(($bf / $allureG) * 100, 3);
+                //calcule de potentie ldes ouvriers.
                 foreach ($ouvriers as &$ouv) {
                     $potentiel = round(($ouv["allure"] * $bfp) / 100, 3);
                     $ouv["potentiel"] = $potentiel;
@@ -74,34 +82,49 @@ class GammeController extends Controller
                 $qte_par_heure = round((($ouvriersPresents->count() * 60) * ($allureG / 100)) / $gamme->temps, 0);
                 $qte_par_jour = $qte_par_heure * $nbr_heure_travail;
                 $nbr_jours_prevu = round($gamme->quantite / $qte_par_jour, 2);
-                $equilibrage = [];
                 $arr = [];
                 $machineCount = [];
                 $reste = [];
                 $reste["operation"] = [];
                 $reste["valeur"] = 0;
+
+                //commencement d'équilibrage
                 foreach ($ouvriers as $ouvrier) {
                     $charge = 0;
-
                     $potentiel = $ouvrier["potentiel_max"];
                     if (!isset($arr[$ouvrier["nom"]])) {
-                        $arr[$ouvrier["nom"]] = [];
+                        $arr[$ouvrier["nom"]] = ["operations" => [], "details" => []];
                     }
-                    //verifier le reste
+                    $nb_machines = 0;
+                    $uniqueMachines = [];
+
+                    //verifier s'il ya de reste
                     if ($reste["valeur"] != 0) {
                         foreach ($reste["operation"] as $o) {
-                            //print_r($o);
-                            array_push($arr[$ouvrier["nom"]], ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]]);
+                            array_push($arr[$ouvrier["nom"]]["operations"], ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]]);
                         }
                         $charge += $reste["valeur"];
                         $reste["operation"] = [];
                         $reste["valeur"] = 0;
                     }
+
                     foreach ($operations as $op) {
+                        //verifier si l'ouvrier àachever le limite maximum des machines (3)
+                        foreach ($arr[$ouvrier["nom"]]["operations"] as $operation) {
+                            $machine = $operation["machine"];
+                            if (!in_array($machine, $uniqueMachines) && !str_contains($machine, "MAIN")) {
+                                //$uniqueMachines[] = $machine;
+                                array_push($uniqueMachines, $machine);
+                                $nb_machines++;
+                            }
+                        }
+                        if ($nb_machines == 3) {
+                            break;
+                        }
                         $operationExiste = false;
                         //verifier si l'opération est déjà accordée
                         foreach ($arr as $k => $v) {
-                            foreach ($arr[$k] as $data) {
+                            foreach ($arr[$k]["operations"] as $data) {
                                 if (isset($data["operation"]) && $data["operation"] === $op->libelle) {
                                     $operationExiste = true;
                                     break;
@@ -127,41 +150,22 @@ class GammeController extends Controller
                                 } while (($charge + $tmp) > $potentiel);
                                 $charge += $tmp;
                                 array_push($reste["operation"], ["libelle" => $op->libelle, "machine" => $op->reference->ref]);
-                                // $reste["operation"] = ["libelle" => $op->libelle, "machine" => $op->reference->ref];
-                                $reste["valeur"] = $op->temps - $tmp;
+                                $reste["valeur"] = round($op->temps - $tmp, 3);
                                 $tmp = 0;
                             }
-
-                            array_push($arr[$ouvrier["nom"]], ["operation" => $op->libelle, "temps" => $op->temps, "machine" => $op->reference->ref]);
+                            array_push($arr[$ouvrier["nom"]]["operations"], ["operation" => $op->libelle, "temps" => $op->temps, "machine" => $op->reference->ref]);
                         } else {
-                            break;
+                            continue;
                         }
                     }
-                    $saturation = $charge * 100 / $potentiel;
-                    array_push($arr[$ouvrier["nom"]], ["charge" => $charge, "pot" => $potentiel, "sat" => $saturation]);
+                    $saturation = round($charge * 100 / $potentiel, 3);
+                    array_push($arr[$ouvrier["nom"]]["details"], ["charge" => round($charge, 3), "pot" => $potentiel, "sat" => $saturation, "nb_operations" => count($arr[$ouvrier["nom"]]["operations"]), "nb_machines" => $nb_machines]);
 
                     $charge = 0;
                 }
-                $machinesUniques = [];
+                // Compteur global des machines par ouvriers
                 $nom = "";
-                // foreach ($arr as $nomOuvrier => $ops) {
-                //     $nom = $nomOuvrier;
-                //     foreach ($ops as $operation) {
-                //         if (isset($operation['machine'])) {
-
-                //             $machine = $operation['machine'];
-                //             if (!isset($machinesUniques[$machine])) {
-                //                 $machinesUniques[$machine] = 0;
-                //             }
-
-                //             if ($nom != $nomOuvrier) {
-                //                 $machinesUniques[$machine]++;
-                //                 $nom = "";
-                //             }
-                //         }
-                //     }
-                // }
-                $totalMachineCount = []; // Compteur global des machines par ouvriers
+                $totalMachineCount = [];
 
                 foreach ($arr as $nomOuvrier => $ops) {
                     $machinesUniques = [];
@@ -183,19 +187,19 @@ class GammeController extends Controller
                 $summary = [
                     "eq" => $arr,
                     "type" => "success",
-                    "reste" => $reste,
-                    "test" => $totalMachineCount,
+                    // "reste" => $reste,
+                    // "test" => $totalMachineCount,
                     "refs" => $references_info,
-                    // "qte" => $gamme->quantite,
-                    // "temps" => $temps_gamme, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
-                    // "AllureM" => $allureG, "bfp" => $bfp, 'qteH' => $qte_par_heure,
-                    // "qteJ" => $qte_par_jour, "nbJrs" => $nbr_jours_prevu, "ouvriersList" => $ouvriers, "operations" => $operations
+                    "qte" => $gamme->quantite,
+                    "temps" => $temps_gamme, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
+                    "AllureM" => $allureG, "bfp" => $bfp, 'qteH' => $qte_par_heure,
+                    "qteJ" => $qte_par_jour, "nbJrs" => $nbr_jours_prevu, "ouvriersList" => $ouvriers, "operations" => $operations, "requiredWorkers" => $workersNeeded,
                 ];
                 return response(json_encode($summary), 201);
             }
 
 
-            return response(json_encode(["type" => "error", "message" => "Aucun ouvrier n'est présent dans cette chaîne ou le nombre des ouvriers est insuffisant."]), 501);
+            return response(json_encode(["type" => "error", "message" => "Nombre ouvriers est insuffisant. Présents :" . count($ouvriersPresents) . " Nécessaires : " . $workersNeeded . ""]), 501);
         } catch (\Throwable $th) {
             return response(json_encode(["type" => "error", "message" => $th->getMessage()]), 501);
         }
