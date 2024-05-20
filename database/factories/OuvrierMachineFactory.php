@@ -2,14 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Models\Operation;
 use App\Models\Ouvrier;
 use App\Models\Reference;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\DB;
-use PHPUnit\Framework\Constraint\Operator;
 
-class CompetenceFactory extends Factory
+class OuvrierMachineFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -35,7 +33,7 @@ class CompetenceFactory extends Factory
             $ouvrier = Ouvrier::all()->random();
             $ref = Reference::all()->random();
 
-            $existing = DB::table('competences')->where([
+            $existing = DB::table('ouvrier_machines')->where([
                 'id_ouvrier' => $ouvrier->id,
                 'id_reference' => $ref->id,
             ])->exists();

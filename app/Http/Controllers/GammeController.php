@@ -26,14 +26,21 @@ class GammeController extends Controller
             $chaine = Chaine::where("libelle", "CH18")->with("ouvriers")->first();
             $nbr_heure_travail = 8;
             $ouvriersPresents = $chaine->ouvriers->where("present", 1);
-            $maxOperationsPerWorker = 3;
+
+            $maxOperationsPerWorker = count($ouvriersPresents) > 30 ? 2 : 3;
+            $idReferences = $gamme->operations->pluck('id_reference');
+            $uniqueIdReferences = $idReferences->unique();
+            $countDistinctIdReferences = $uniqueIdReferences->count();
+            $minUsers = ceil($countDistinctIdReferences / 3);
+
             $operationsCount = $gamme->operations->count();
             $workersNeeded = ceil($operationsCount / $maxOperationsPerWorker);
-            if (count($ouvriersPresents) >= $workersNeeded) {
+            if (count($ouvriersPresents) >= 10) {
                 $bf = round($gamme->temps / $ouvriersPresents->count(), 3);
                 $operations = $gamme->operations;
                 $temps_gamme = 0;
                 $references_info = [];
+                $total_machines = 0;
 
                 //verif besoin machines
                 foreach ($operations as $operation) {
@@ -90,44 +97,69 @@ class GammeController extends Controller
 
                 //commencement d'équilibrage
                 foreach ($ouvriers as $ouvrier) {
+                    $competences = [];
+                    $top3Comp = [];
+                    $comp_i = 0;
+                    foreach ($ouvrier["competences"] as $comp) {
+                        $comp_i++;
+                        if ($comp_i <= 3) {
+                            $top3Comp[] = $comp["reference"]["ref"];
+                        }
+                        # code...
+                        if ($comp["score"] != 0)
+                            $competences[] = ["machine" => $comp["reference"]["ref"], "score" => $comp["score"]];
+                    }
                     $charge = 0;
                     $potentiel = $ouvrier["potentiel_max"];
+
                     if (!isset($arr[$ouvrier["nom"]])) {
                         $arr[$ouvrier["nom"]] = ["operations" => [], "details" => []];
                     }
                     $nb_machines = 0;
                     $uniqueMachines = [];
+                    $nb_opertions = 0;
 
                     //verifier s'il ya de reste
                     if ($reste["valeur"] != 0) {
+
                         foreach ($reste["operation"] as $o) {
-                            array_push($arr[$ouvrier["nom"]]["operations"], ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]]);
+                            if (!isset($arr[$ouvrier["nom"]]["operations"][$o["machine"]])) {
+                                $arr[$ouvrier["nom"]]["operations"] += [$o["machine"] => []];
+                            }
+                            array_push($arr[$ouvrier["nom"]]["operations"][$o["machine"]], ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]]);
+                            // $arr[$ouvrier["nom"]]["operations"][$o["machine"]] += ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]];
+
+                            //array_push($arr[$ouvrier["nom"]]["operations"], ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]]);
                         }
-                        $charge += $reste["valeur"];
+                        $charge += round($reste["valeur"], 3);
+                        $nb_opertions++;
                         $reste["operation"] = [];
                         $reste["valeur"] = 0;
                     }
 
                     foreach ($operations as $op) {
                         //verifier si l'ouvrier àachever le limite maximum des machines (3)
-                        foreach ($arr[$ouvrier["nom"]]["operations"] as $operation) {
-                            $machine = $operation["machine"];
-                            if (!in_array($machine, $uniqueMachines) && !str_contains($machine, "MAIN")) {
-                                //$uniqueMachines[] = $machine;
-                                array_push($uniqueMachines, $machine);
-                                $nb_machines++;
-                            }
-                        }
-                        if ($nb_machines == 3) {
-                            break;
-                        }
+                        // foreach ($arr[$ouvrier["nom"]]["operations"] as $operation) {
+                        //     $machine = $operation["machine"];
+                        //     if (!in_array($machine, $uniqueMachines) && !str_contains($machine, "MAIN")) {
+                        //         //$uniqueMachines[] = $machine;
+                        //         array_push($uniqueMachines, $machine);
+                        //         $nb_machines++;
+                        //     }
+                        // }
+                        // if ($nb_machines == 3) {
+                        //     break;
+                        // }
+
                         $operationExiste = false;
                         //verifier si l'opération est déjà accordée
                         foreach ($arr as $k => $v) {
-                            foreach ($arr[$k]["operations"] as $data) {
-                                if (isset($data["operation"]) && $data["operation"] === $op->libelle) {
-                                    $operationExiste = true;
-                                    break;
+                            foreach ($arr[$k]["operations"] as $ref => $value) {
+                                foreach ($arr[$k]["operations"][$ref] as $data) {
+                                    if (isset($data["operation"]) && $data["operation"] === $op->libelle) {
+                                        $operationExiste = true;
+                                        break;
+                                    }
                                 }
                             }
                             if ($operationExiste) {
@@ -140,68 +172,128 @@ class GammeController extends Controller
                         //fin verif operation
 
                         //distribution de VT
-                        if (($potentiel - $charge) > 0.2) {
-                            if (($op->temps + $charge) <= ($potentiel + 0.2)) {
-                                $charge += $op->temps;
-                            } else {
-                                $tmp = $op->temps;
-                                do {
-                                    $tmp -= 0.1;
-                                } while (($charge + $tmp) > $potentiel);
-                                $charge += $tmp;
-                                array_push($reste["operation"], ["libelle" => $op->libelle, "machine" => $op->reference->ref]);
-                                $reste["valeur"] = round($op->temps - $tmp, 3);
-                                $tmp = 0;
+                        if (($potentiel - $charge) > 0.2 && ($potentiel - $op->temps) > 0.2) {
+                            $charged_time = 0;
+                            if (count($arr[$ouvrier["nom"]]["operations"]) >= $maxOperationsPerWorker && !isset($arr[$ouvrier["nom"]]["operations"][$op->reference->ref])) {
+                                continue;
                             }
-                            array_push($arr[$ouvrier["nom"]]["operations"], ["operation" => $op->libelle, "temps" => $op->temps, "machine" => $op->reference->ref]);
+                            $charged_time = $this->handleChargeAndRemainingOperations($op, $charge, $potentiel, $reste);
+                            $this->addOperation(
+                                $arr,
+                                $ouvrier,
+                                $op,
+                                $charged_time
+                            );
+                            $nb_opertions++;
+
+                            // if (in_array($op->reference->ref, $top3Comp)) {
+                            //     $charged_time = $this->handleChargeAndRemainingOperations($op, $charge, $potentiel, $reste);
+                            //     $this->addOperation(
+                            //         $arr,
+                            //         $ouvrier,
+                            //         $op,
+                            //         $charged_time
+                            //     );
+                            //     $nb_opertions++;
+                            // } else {
+                            //     $give_it = false;
+                            //     foreach ($competences as $comp) {
+                            //         if ($comp["machine"] === $op->reference->ref && $comp["score"] >= 5) {
+                            //             $give_it = true;
+                            //             break;
+                            //         }
+                            //     }
+
+                            //     if ($give_it) {
+                            //         $charged_time = $this->handleChargeAndRemainingOperations($op, $charge, $potentiel, $reste);
+                            //         $this->addOperation(
+                            //             $arr,
+                            //             $ouvrier,
+                            //             $op,
+                            //             $charged_time
+                            //         );
+                            //         $nb_opertions++;
+                            //     } else {
+                            //         continue;
+                            //     }
+                            // }
                         } else {
                             continue;
                         }
                     }
                     $saturation = round($charge * 100 / $potentiel, 3);
-                    array_push($arr[$ouvrier["nom"]]["details"], ["charge" => round($charge, 3), "pot" => $potentiel, "sat" => $saturation, "nb_operations" => count($arr[$ouvrier["nom"]]["operations"]), "nb_machines" => $nb_machines]);
+                    $ouvrier_machines = 0;
+                    foreach ($arr[$ouvrier["nom"]]["operations"] as $ref => $vv) {
+                        if (!str_contains($ref, "MAIN")) {
+                            $total_machines++;
+                            $ouvrier_machines++;
+                        }
+                    }
 
+
+                    array_push($arr[$ouvrier["nom"]]["details"], ["charge" => round($charge, 3), "pot" => $potentiel, "sat" => $saturation, "nb_operations" => $nb_opertions, "nb_machines" => $ouvrier_machines, "top3" => $top3Comp]);
+
+                    // $total_machines += count($arr[$ouvrier["nom"]]["operations"]);
                     $charge = 0;
+                    if (count($arr[$ouvrier["nom"]]["operations"]) == 0) {
+                        unset($arr[$ouvrier["nom"]]);
+                    }
                 }
                 // Compteur global des machines par ouvriers
                 $nom = "";
-                $totalMachineCount = [];
+                // $totalMachineCount = [];
 
-                foreach ($arr as $nomOuvrier => $ops) {
-                    $machinesUniques = [];
-                    foreach ($ops as $operation) {
-                        if (isset($operation['machine'])) {
-                            $machine = $operation['machine'];
-                            if (!in_array($machine, $machinesUniques)) {
-                                $machinesUniques[] = $machine;
-                                // Comptez la machine globalement
-                                if (!isset($totalMachineCount[$machine])) {
-                                    $totalMachineCount[$machine] = 0;
-                                }
-                                $totalMachineCount[$machine]++;
-                            }
-                        }
+                // foreach ($arr as $nomOuvrier => $ops) {
+                //     $machinesUniques = [];
+                //     foreach ($ops as $operation) {
+                //         if (isset($operation['machine'])) {
+                //             $machine = $operation['machine'];
+                //             if (!in_array($machine, $machinesUniques)) {
+                //                 $machinesUniques[] = $machine;
+                //                 // Comptez la machine globalement
+                //                 if (!isset($totalMachineCount[$machine])) {
+                //                     $totalMachineCount[$machine] = 0;
+                //                 }
+                //                 $totalMachineCount[$machine]++;
+                //             }
+                //         }
+                //     }
+                // }
+                //total ouvriers
+                $total_ouvriers = 0;
+                foreach ($arr as $k => $v) {
+                    if (count($arr[$k]["operations"]) != 0) {
+                        $total_ouvriers++;
                     }
                 }
 
                 $summary = [
+                    "total_ouvriers" => $total_ouvriers,
                     "eq" => $arr,
                     "type" => "success",
+                    "total_machines" => $total_machines,
                     // "reste" => $reste,
-                    // "test" => $totalMachineCount,
                     "refs" => $references_info,
                     "qte" => $gamme->quantite,
-                    "temps" => $temps_gamme, "ouvriersDispo" => $ouvriersPresents->count(), "BF" => $bf,
-                    "AllureM" => $allureG, "bfp" => $bfp, 'qteH' => $qte_par_heure,
-                    "qteJ" => $qte_par_jour, "nbJrs" => $nbr_jours_prevu, "ouvriersList" => $ouvriers, "operations" => $operations, "requiredWorkers" => $workersNeeded,
+                    "temps" => $temps_gamme,
+                    "ouvriersDispo" => $ouvriersPresents->count(),
+                    "BF" => $bf,
+                    "AllureM" => $allureG,
+                    "bfp" => $bfp,
+                    'qteH' => $qte_par_heure,
+                    "qteJ" => $qte_par_jour,
+                    "nbJrs" => $nbr_jours_prevu,
+                    "ouvriersList" => $ouvriers,
+                    "operations" => $operations,
+                    "requiredWorkers" => $workersNeeded,
                 ];
                 return response(json_encode($summary), 201);
             }
 
 
-            return response(json_encode(["type" => "error", "message" => "Nombre ouvriers est insuffisant. Présents :" . count($ouvriersPresents) . " Nécessaires : " . $workersNeeded . ""]), 501);
+            return response(json_encode(["type" => "error", "message" => "Nombre ouvriers est insuffisant. Présents :" . count($ouvriersPresents) . " Nécessaires : " . $workersNeeded . ""]), 403);
         } catch (\Throwable $th) {
-            return response(json_encode(["type" => "error", "message" => $th->getMessage()]), 501);
+            return response(json_encode(["type" => "error", "message" => $th->getMessage() . " " . $th->getLine()]), 501);
         }
     }
     /**
@@ -268,5 +360,35 @@ class GammeController extends Controller
     public function destroy(Gamme $gamme)
     {
         //
+    }
+    function handleChargeAndRemainingOperations($op, &$charge, $potentiel, &$reste)
+    {
+        if (($op->temps + $charge) <= $potentiel || ($op->temps + $charge) <= $potentiel + 0.2) {
+            $charged_time = $op->temps;
+            $charge += round($op->temps, 3);
+        } else {
+            $tmp = $op->temps;
+            do {
+                $tmp -= 0.1;
+            } while (($charge + $tmp) > $potentiel);
+            $charge += $tmp;
+            array_push($reste["operation"], ["libelle" => $op->libelle, "machine" => $op->reference->ref]);
+            $reste["valeur"] = round($tmp, 3);
+            $charged_time = round($op->temps - $tmp, 3);
+        }
+        return $charged_time;
+    }
+
+
+    function addOperation(&$arr, $ouvrier, $op, $charged_time)
+    {
+        if (!isset($arr[$ouvrier["nom"]]["operations"][$op->reference->ref])) {
+            $arr[$ouvrier["nom"]]["operations"] += [$op->reference->ref => []];
+        }
+        array_push($arr[$ouvrier["nom"]]["operations"][$op->reference->ref], [
+            "operation" => $op->libelle,
+            "temps" => round($charged_time, 3),
+            "machine" => $op->reference->ref
+        ]);
     }
 }

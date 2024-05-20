@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,7 @@ class OuvrierMachine extends Model
 {
     use HasFactory;
 
-    protected $fillable = ["id_ouvrier", "id_reference"];
+    protected $fillable = ["id_ouvrier", "id_reference", "score"];
 
     function ouvrier(): BelongsTo
     {
@@ -25,5 +26,12 @@ class OuvrierMachine extends Model
     function operations(): BelongsTo
     {
         return $this->belongsTo(Operation::class);
+    }
+    protected static function boot()
+    {
+        parent::boot();
+        static::addGlobalScope('order', function (Builder $builder) {
+            $builder->orderBy('score', 'DESC');
+        });
     }
 }

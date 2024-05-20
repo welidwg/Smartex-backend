@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware(["auth:api"])->group(function () {
     Route::resource("/utilisateur", UtilisateurController::class);
     Route::resource("/historique", HistoriqueMachineController::class);
+    Route::resource("/reference", ReferencesController::class);
     Route::resource("/machine", MachineController::class);
     Route::resource("/echange", EchangeController::class);
     Route::resource("/chaine", ChaineController::class);
@@ -55,17 +56,17 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/competence", CompetenceController::class);
     Route::post("/ouvrier/presence", [OuvrierController::class, "markPresence"]);
     Route::post("/ouvrier/presence/auto", [OuvrierController::class, "markPresenceAuto"]);
-    Route::resource("/ouvrier", OuvrierController::class);
+    
     Route::get('/gamme/equilibrage', [GammeController::class, 'equilibrage']);
     Route::resource("/gamme", GammeController::class);
     Route::get('/ouvrierMachine/ouvrier/{id}', [OuvrierMachineController::class, 'getOuvrierMachineByOuvrierId']);
     Route::get('/ouvrierMachine/ref/{id}', [OuvrierMachineController::class, 'getOuvrierMachineByRefId']);
     Route::resource("/ouvrierMachine", OuvrierMachineController::class);
     Route::post("/logout", [LoginController::class, "logout"])->name("logout");
+    Route::get("/hist/{idmachine}", [HistoriqueMachineController::class, "all"])->name("all");
+    Route::resource("/operation", OperationController::class);
 });
 
 Route::post("/login", [LoginController::class, "login"])->name("login");
 Route::post("/init", [UtilisateurController::class, "init"])->name("init");
-Route::get("/hist/{idmachine}", [HistoriqueMachineController::class, "all"])->name("all");
-Route::resource("/operation", OperationController::class);
-Route::resource("/reference", ReferencesController::class);
+Route::resource("/ouvrier", OuvrierController::class);

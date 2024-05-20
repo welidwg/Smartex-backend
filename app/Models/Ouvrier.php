@@ -12,7 +12,7 @@ class Ouvrier extends Model
 {
     use HasFactory;
     protected $fillable = ["nom", "matricule", "id_chaine", "allure", "present"];
-    protected $with = ["competences"];
+    protected $with = ["competences.reference"];
 
     function competences(): HasMany
     {
@@ -28,7 +28,7 @@ class Ouvrier extends Model
     {
         parent::boot();
         static::addGlobalScope('order', function (Builder $builder) {
-            $builder->orderBy('created_at', 'DESC');
+            $builder->orderBy('allure', 'DESC');
         });
     }
 }
