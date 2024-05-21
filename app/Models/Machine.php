@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Machine extends Model
 {
     use HasFactory;
-    protected $fillable = ["code", "id_etat", "id_reference", "id_chaine", "parc", "added_by", "edited_by"];
+    protected $fillable = ["code", "id_etat", "id_reference", "id_chaine", "parc", "added_by", "edited_by","avg_panne","estimation"];
     protected $with = ["chaine", "user_added", "user_edited", "reference", "historique", "echanges", "historiqueActivite", "etat"];
     static $rules = [
         'code' => "required|unique:machines",

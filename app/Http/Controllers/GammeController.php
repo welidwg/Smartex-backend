@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Chaine;
 use App\Models\Gamme;
+use App\Models\HistoriqueActivite;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class GammeController extends Controller
 {
@@ -18,16 +20,21 @@ class GammeController extends Controller
         return json_encode(Gamme::with("operations")->get());
     }
 
-
-    public function equilibrage()
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function equilibrage(Request $request)
     {
         try {
-            $gamme = Gamme::where("id", 3)->with(["operations"])->first();
-            $chaine = Chaine::where("libelle", "CH18")->with("ouvriers")->first();
+            $gamme = Gamme::where("id", $request->id_gamme)->with(["operations"])->first();
+            $chaine = Chaine::where("id", $request->id_chaine)->with("ouvriers")->first();
             $nbr_heure_travail = 8;
             $ouvriersPresents = $chaine->ouvriers->where("present", 1);
 
-            $maxOperationsPerWorker = count($ouvriersPresents) > 30 ? 2 : 3;
+            $maxOperationsPerWorker = count($ouvriersPresents) > 30 ? 3 : 2;
             $idReferences = $gamme->operations->pluck('id_reference');
             $uniqueIdReferences = $idReferences->unique();
             $countDistinctIdReferences = $uniqueIdReferences->count();
@@ -79,7 +86,7 @@ class GammeController extends Controller
 
                 $allureG = round($sommeAllure / $ouvriersPresents->count(), 2);
                 $bfp = round(($bf / $allureG) * 100, 3);
-                //calcule de potentie ldes ouvriers.
+                //calcule de potentiel des ouvriers.
                 foreach ($ouvriers as &$ouv) {
                     $potentiel = round(($ouv["allure"] * $bfp) / 100, 3);
                     $ouv["potentiel"] = $potentiel;
@@ -121,15 +128,11 @@ class GammeController extends Controller
 
                     //verifier s'il ya de reste
                     if ($reste["valeur"] != 0) {
-
                         foreach ($reste["operation"] as $o) {
                             if (!isset($arr[$ouvrier["nom"]]["operations"][$o["machine"]])) {
                                 $arr[$ouvrier["nom"]]["operations"] += [$o["machine"] => []];
                             }
                             array_push($arr[$ouvrier["nom"]]["operations"][$o["machine"]], ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]]);
-                            // $arr[$ouvrier["nom"]]["operations"][$o["machine"]] += ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]];
-
-                            //array_push($arr[$ouvrier["nom"]]["operations"], ["operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"]]);
                         }
                         $charge += round($reste["valeur"], 3);
                         $nb_opertions++;
@@ -138,19 +141,6 @@ class GammeController extends Controller
                     }
 
                     foreach ($operations as $op) {
-                        //verifier si l'ouvrier àachever le limite maximum des machines (3)
-                        // foreach ($arr[$ouvrier["nom"]]["operations"] as $operation) {
-                        //     $machine = $operation["machine"];
-                        //     if (!in_array($machine, $uniqueMachines) && !str_contains($machine, "MAIN")) {
-                        //         //$uniqueMachines[] = $machine;
-                        //         array_push($uniqueMachines, $machine);
-                        //         $nb_machines++;
-                        //     }
-                        // }
-                        // if ($nb_machines == 3) {
-                        //     break;
-                        // }
-
                         $operationExiste = false;
                         //verifier si l'opération est déjà accordée
                         foreach ($arr as $k => $v) {
@@ -172,8 +162,10 @@ class GammeController extends Controller
                         //fin verif operation
 
                         //distribution de VT
-                        if (($potentiel - $charge) > 0.2 && ($potentiel - $op->temps) > 0.2) {
-                            $charged_time = 0;
+                        //($potentiel - $charge) > 0.2 && ($potentiel - $op->temps) > 0.2
+                        $charged_time = 0;
+                        if (($potentiel - $charge) > 0.2) {
+
                             if (count($arr[$ouvrier["nom"]]["operations"]) >= $maxOperationsPerWorker && !isset($arr[$ouvrier["nom"]]["operations"][$op->reference->ref])) {
                                 continue;
                             }
@@ -287,13 +279,15 @@ class GammeController extends Controller
                     "operations" => $operations,
                     "requiredWorkers" => $workersNeeded,
                 ];
+                HistoriqueActivite::create(["activite" => "Equilibrage de chaîne " . $chaine->libelle, "id_machine" => null, "id_user" => Auth::id()]);
+
                 return response(json_encode($summary), 201);
             }
 
 
             return response(json_encode(["type" => "error", "message" => "Nombre ouvriers est insuffisant. Présents :" . count($ouvriersPresents) . " Nécessaires : " . $workersNeeded . ""]), 403);
         } catch (\Throwable $th) {
-            return response(json_encode(["type" => "error", "message" => $th->getMessage() . " " . $th->getLine()]), 501);
+            return response(json_encode(["type" => "error", "message" => $th->getMessage() . " " . $th->getLine() . " " . json_encode($request->all())]), 501);
         }
     }
     /**

@@ -7,6 +7,7 @@ use App\Models\EtatMachine;
 use App\Models\HistoriqueActivite;
 use App\Models\Machine;
 use App\Models\Notification;
+use App\Models\Reference;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -53,6 +54,29 @@ class MachineController extends Controller
             $ma = Machine::create($request->all());
             HistoriqueActivite::create(["activite" => "Ajout de machine", "id_machine" => $ma->id, "id_user" => Auth::id()]);
             return response(json_encode(["message" => "Machine bien créee", "type" => "success"]), 200);
+        } catch (\Throwable $th) {
+            return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
+        }
+    }
+    public function addFromFlask(Request $req)
+    {
+        try {
+            $check_ref = Reference::where("ref", $req->reference)->first();
+            $ref_id = 0;
+            if ($check_ref) {
+                $ref_id = $check_ref->id;
+            } else {
+                $new =  Reference::create(["ref" => $req->reference]);
+                $ref_id = $new->id;
+            }
+            $check_code = Machine::where("code", $req->code)->first();
+            if (!$check_code) {
+                $data = $req->all();
+                $data["id_reference"] = $ref_id;
+                Machine::create($data);
+                return response(json_encode(["message" => "Bien créee", "type" => "success"]), 201);
+            }
+            return response(json_encode(["message" => "erreur", "type" => "error"]), 500);
         } catch (\Throwable $th) {
             return response(json_encode(["message" => $th->getMessage(), "type" => "error"]), 500);
         }
