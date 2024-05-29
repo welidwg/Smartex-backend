@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Chaine;
 use App\Models\Gamme;
 use App\Models\HistoriqueActivite;
+use App\Models\Operation;
+use App\Models\OuvrierMachine;
+use App\Models\Reference;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class GammeController extends Controller
 {
@@ -26,17 +30,166 @@ class GammeController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
+
+    public function equiPoly(Request $req)
+    {
+        $reference = Reference::with([
+            'competences' => function ($query) {
+                $query->with([
+                    'ouvrier' => function ($query) {
+                        $query->without('competences');
+                    }
+                ])->without('reference')->select("score", "id_ouvrier", "id_reference");
+            }
+        ])->select("id", "ref")->get();
+        $gamme = Gamme::where("id", 3)->with(["operations"])->first();
+        $chaine = Chaine::where("libelle", "CH18")->with("ouvriers")->first();
+        $nbr_heure_travail = 8;
+        $ouvriersPresents = $chaine->ouvriers->where("present", 1);
+
+        //calcule des formules
+
+        //base de fragemntation
+        $bf = round($gamme->temps / $ouvriersPresents->count(), 3);
+
+        //total des allures et détails des ouvriers
+        $sommeAllure = 0;
+        $ouvriers = [];
+        foreach ($ouvriersPresents as $ouvrier) {
+            $sommeAllure += $ouvrier->allure;
+        }
+        //allure moyenne
+        $allureG = round($sommeAllure / $ouvriersPresents->count(), 2);
+
+        //base de fragemntation pondérée
+        $bfp = round(($bf / $allureG) * 100, 3);
+
+        //calcule de potentiel des ouvriers.
+        foreach ($ouvriers as &$ouv) {
+            $potentiel = round(($ouv["allure"] * $bfp) / 100, 3);
+            $ouv["potentiel"] = $potentiel;
+            $ouv["potentiel_min"] = round($potentiel * (1 - 0.1), 3);
+            $ouv["potentiel_max"] = round($potentiel * (1 + 0.1), 3);
+        }
+
+        //équilibrage
+        $equi = [];
+        //le tableau de reste des opérations
+        $reste = [];
+        $reste["operation"] = [];
+        $reste["valeur"] = 0;
+        $operations = $gamme->operations;
+        $total_machines = 0;
+
+        foreach ($operations as $op) {
+            $OM = OuvrierMachine::where("id_reference", $op->id_reference)->where("score", "!=", 0)->with("ouvrier")->orderBy("score", "DESC")->get();
+
+            if ($reste["valeur"] != 0) {
+                $ref = '';
+                foreach ($reste["operation"] as $o) {
+                    $oper = Operation::find($o["id"]);
+                    $ouvs = OuvrierMachine::where("id_reference", $oper->id_reference)->where("score", "!=", 0)->with("ouvrier")->orderBy("score", "DESC")->get();
+                    foreach ($ouvs as $ouv) {
+                        $ouvrier = $ouv->ouvrier;
+                        $potentiel = round(($ouvrier["allure"] * $bfp) / 100, 3);
+
+                        if (!$ouvrier->present)
+                            continue;
+                        if (!isset($equi[$ouvrier->nom])) {
+
+                            $equi[$ouvrier->nom] = ["operations" => [], "details" => [], "charge" => 0, "pot" => $potentiel];
+                        } elseif (count($equi[$ouvrier->nom]["operations"]) >= 3 && !isset($equi[$ouvrier->nom]["operations"][$o["machine"]])) {
+                            continue;
+                        }
+                        if (($potentiel - $equi[$ouvrier->nom]["charge"]) < 0.2)
+                            continue;
+                        if (!isset($equi[$ouvrier->nom]["operations"][$o["machine"]])) {
+                            $equi[$ouvrier->nom]["operations"] += [$o["machine"] => []];
+                        }
+
+                        array_push($equi[$ouvrier->nom]["operations"][$o["machine"]], ["id" => $o["id"], "operation" => $o["libelle"], "temps" => $reste["valeur"], "machine" => $o["machine"], "linked" => true]);
+                        $equi[$ouvrier->nom]["charge"] += round($reste["valeur"], 3);
+                        break;
+                    }
+                }
+                // $nb_opertions++;
+                $reste["operation"] = [];
+                $reste["valeur"] = 0;
+            }
+            $operationExiste = false;
+            foreach ($equi as $k => $v) {
+                foreach ($equi[$k]["operations"] as $ref => $value) {
+                    foreach ($equi[$k]["operations"][$ref] as $data) {
+                        if (isset($data["operation"]) && $data["operation"] === $op->libelle) {
+                            $operationExiste = true;
+                            break;
+                        }
+                    }
+                }
+                if ($operationExiste) {
+                    break;
+                }
+            }
+            if ($operationExiste) {
+                continue;
+            }
+
+            foreach ($OM as $ouvrierMachine) {
+                $ouvrier = $ouvrierMachine->ouvrier;
+                $potentiel = round(($ouvrier["allure"] * $bfp) / 100, 3);
+
+                //verifier présence ouvrier
+                if (!$ouvrier->present)
+                    continue;
+                if (!isset($equi[$ouvrier->nom])) {
+                    $equi[$ouvrier->nom] = ["operations" => [], "details" => [], "charge" => 0, "pot" => $potentiel];
+                    $continue = false;
+                } elseif (count($equi[$ouvrier->nom]["operations"]) >= 3 && !isset($equi[$ouvrier->nom]["operations"][$op->reference->ref])) {
+                    continue;
+                }
+
+                $charge = $equi[$ouvrier->nom]["charge"];
+                $charged_time = 0;
+                if (($potentiel - $charge) > 0.2) {
+                    $charged_time = $this->processing($op, $ouvrier, $reste, $equi, $potentiel);
+                    $this->addOperation(
+                        $equi,
+                        $ouvrier,
+                        $op,
+                        $charged_time
+                    );
+
+                    break;
+                    //$nb_opertions++;
+                } else {
+                    continue;
+                }
+            }
+        }
+        foreach ($equi as $ouvrier => $value) {
+            $saturation = round($equi[$ouvrier]["charge"] * 100 / $equi[$ouvrier]["pot"], 3);
+            foreach ($equi[$ouvrier]["operations"] as $ref => $vv) {
+                if (!str_contains($ref, "MAIN")) {
+                }
+                $total_machines++;
+            }
+            $equi[$ouvrier]["saturation"] = $saturation;
+        }
+
+        return json_encode(["eq" => $equi, "workers" => count($equi), "machines" => $total_machines]);
+    }
     public function equilibrage(Request $request)
     {
         try {
             $gamme = Gamme::where("id", $request->id_gamme)->with(["operations"])->first();
             $chaine = Chaine::where("id", $request->id_chaine)->with("ouvriers")->first();
+            //$refs = Reference::all();
             $nbr_heure_travail = 8;
             $ouvriersPresents = $chaine->ouvriers->where("present", 1);
 
             $maxOperationsPerWorker = count($ouvriersPresents) > 30 ? 3 : 2;
             $idReferences = $gamme->operations->pluck('id_reference');
-            $uniqueIdReferences = $idReferences->unique();
+            $uniqueIdReferences = $idReferences;
             $countDistinctIdReferences = $uniqueIdReferences->count();
             $minUsers = ceil($countDistinctIdReferences / 3);
 
@@ -117,7 +270,7 @@ class GammeController extends Controller
                             $competences[] = ["machine" => $comp["reference"]["ref"], "score" => $comp["score"]];
                     }
                     $charge = 0;
-                    $potentiel = $ouvrier["potentiel_max"];
+                    $potentiel = $ouvrier["potentiel"];
 
                     if (!isset($arr[$ouvrier["nom"]])) {
                         $arr[$ouvrier["nom"]] = ["operations" => [], "details" => []];
@@ -166,6 +319,14 @@ class GammeController extends Controller
                         $charged_time = 0;
                         if (($potentiel - $charge) > 0.2) {
 
+
+                            $give_it = false;
+                            foreach ($competences as $comp) {
+                                if ($comp["machine"] === $op->reference->ref && $comp["score"] >= 5) {
+                                    $give_it = true;
+                                    break;
+                                }
+                            }
                             if (count($arr[$ouvrier["nom"]]["operations"]) >= $maxOperationsPerWorker && !isset($arr[$ouvrier["nom"]]["operations"][$op->reference->ref])) {
                                 continue;
                             }
@@ -355,6 +516,28 @@ class GammeController extends Controller
     {
         //
     }
+    function processing($op, $ouvrier, &$reste, &$equi, $potentiel)
+    {
+        $charge = $equi[$ouvrier["nom"]]["charge"];
+        if (($op->temps + $charge) <= $potentiel || ($op->temps + $charge) <= $potentiel + 0.2) {
+            $charged_time = $op->temps;
+            $charge += round($op->temps, 3);
+        } else {
+            $tmp = $op->temps;
+            do {
+                $tmp -= 0.1;
+            } while (($charge + $tmp) > $potentiel);
+            $charge += $tmp;
+            array_push($reste["operation"], ["libelle" => $op->libelle, "machine" => $op->reference->ref, "id" => $op->id]);
+            $reste["valeur"] = round($tmp, 3);
+            $charged_time = round($op->temps - $tmp, 3);
+        }
+        $equi[$ouvrier["nom"]]["charge"] = $charge;
+        return $charged_time;
+    }
+
+
+
     function handleChargeAndRemainingOperations($op, &$charge, $potentiel, &$reste)
     {
         if (($op->temps + $charge) <= $potentiel || ($op->temps + $charge) <= $potentiel + 0.2) {
@@ -380,9 +563,22 @@ class GammeController extends Controller
             $arr[$ouvrier["nom"]]["operations"] += [$op->reference->ref => []];
         }
         array_push($arr[$ouvrier["nom"]]["operations"][$op->reference->ref], [
+            "id" => $op->id,
             "operation" => $op->libelle,
             "temps" => round($charged_time, 3),
             "machine" => $op->reference->ref
         ]);
+    }
+    function addOperationPoly(&$arr, $nomOuvrier, $op, $charged_time)
+    {
+        if (!isset($arr[$nomOuvrier]["operations"][$op->reference->ref])) {
+            $arr[$nomOuvrier]["operations"] += [$op->reference->ref => []];
+        }
+        array_push($arr[$nomOuvrier]["operations"][$op->reference->ref], [
+            "operation" => $op->libelle,
+            "temps" => round($charged_time, 3),
+            "machine" => $op->reference->ref
+        ]);
+        $arr[$nomOuvrier]["charge"] += $charged_time;
     }
 }

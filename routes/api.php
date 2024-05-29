@@ -67,6 +67,7 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/ouvrier", OuvrierController::class);
     Route::resource("/machine", MachineController::class);
     Route::post("/predict/{id_machine}", [HistoriqueMachineController::class, "estimateModel"]);
+    Route::resource("/historique", HistoriqueMachineController::class);
 
 });
 Route::post("/login", [LoginController::class, "login"])->name("login");
@@ -74,3 +75,6 @@ Route::post("/machine/flask", [MachineController::class, "addFromFlask"]);
 Route::get("/hist/{idmachine}", [HistoriqueMachineController::class, "all"])->name("all");
 Route::post("/init", [UtilisateurController::class, "init"])->name("init");
 Route::post("/allmachines/estimate",[HistoriqueMachineController::class, "estimationAllMachines"]);
+Route::get("/h/all", [HistoriqueMachineController::class, "allHistorique"]);
+Route::post("/equi/poly",[GammeController::class, "equiPoly"]);
+

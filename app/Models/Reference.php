@@ -11,8 +11,15 @@ class Reference extends Model
     use HasFactory;
     protected $fillable = ["ref"];
 
+
     function machines(): HasMany
     {
         return $this->hasMany(Machine::class, "id_reference");
+    }
+
+
+    function competences(): HasMany
+    {
+        return $this->hasMany(OuvrierMachine::class, "id_reference");
     }
 }

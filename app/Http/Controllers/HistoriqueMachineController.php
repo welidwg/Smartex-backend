@@ -23,6 +23,16 @@ class HistoriqueMachineController extends Controller
         return json_encode(HistoriqueMachine::where("id_machine", $req->id_machine)->with(["machine", "panne"])->get());
     }
 
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function allHistorique(Request $req)
+    {
+        return json_encode(HistoriqueMachine::with(["panne", "machine"])->get());
+    }
+
     public function all($idmachine)
     {
         return json_encode(HistoriqueMachine::where("id_machine", $idmachine)->get());

@@ -31,11 +31,13 @@ class HistoriqueMachineFactory extends Factory
         $endTime = $this->faker->time('H:i:s', '18:00:00');
         // Combinaison de la date et de l'heure
         $dateTime = $startDate->format('Y-m-d') . ' ' . $startTime;
-        return [
-            'id_machine' => $machine->id,
-            'date_heure' => $dateTime,
-            "id_panne" => $panne->id,
-            "added_by" => null
-        ];
+        if ($machine->historique->count() <150)
+            return [
+                'id_machine' => $machine->id,
+                'date_heure' => $dateTime,
+                "id_panne" => $panne->id,
+                "added_by" => null
+            ];
+        return null;
     }
 }
