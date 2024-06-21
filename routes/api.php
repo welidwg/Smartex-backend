@@ -16,6 +16,7 @@ use App\Http\Controllers\OuvrierMachineController;
 use App\Http\Controllers\PanneMachineController;
 use App\Http\Controllers\ReferencesController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\UtilisateurController;
 use App\Models\Gamme;
 use App\Models\HistoriqueMachine;
@@ -40,7 +41,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::middleware(["auth:api"])->group(function () {
-    Route::resource("/utilisateur", UtilisateurController::class);
+    Route::middleware(["admin"])->group(function () {
+        Route::resource("/utilisateur", UtilisateurController::class);
+    });
+
     Route::resource("/historique", HistoriqueMachineController::class);
     Route::resource("/reference", ReferencesController::class);
     Route::resource("/echange", EchangeController::class);
@@ -56,7 +60,7 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/competence", CompetenceController::class);
     Route::post("/ouvrier/presence", [OuvrierController::class, "markPresence"]);
     Route::post("/ouvrier/presence/auto", [OuvrierController::class, "markPresenceAuto"]);
-
+    Route::post("/predict/{id_machine}", [HistoriqueMachineController::class, "estimateModel"]);
     Route::post('/gamme/equilibrage', [GammeController::class, 'equilibrage']);
     Route::resource("/gamme", GammeController::class);
     Route::get('/ouvrierMachine/ouvrier/{id}', [OuvrierMachineController::class, 'getOuvrierMachineByOuvrierId']);
@@ -66,15 +70,13 @@ Route::middleware(["auth:api"])->group(function () {
     Route::resource("/operation", OperationController::class);
     Route::resource("/ouvrier", OuvrierController::class);
     Route::resource("/machine", MachineController::class);
-    Route::post("/predict/{id_machine}", [HistoriqueMachineController::class, "estimateModel"]);
-    Route::resource("/historique", HistoriqueMachineController::class);
-
 });
+
 Route::post("/login", [LoginController::class, "login"])->name("login");
 Route::post("/machine/flask", [MachineController::class, "addFromFlask"]);
 Route::get("/hist/{idmachine}", [HistoriqueMachineController::class, "all"])->name("all");
 Route::post("/init", [UtilisateurController::class, "init"])->name("init");
-Route::post("/allmachines/estimate",[HistoriqueMachineController::class, "estimationAllMachines"]);
+Route::post("/allmachines/estimate", [HistoriqueMachineController::class, "estimationAllMachines"]);
 Route::get("/h/all", [HistoriqueMachineController::class, "allHistorique"]);
-Route::post("/equi/poly",[GammeController::class, "equiPoly"]);
-
+Route::get("/stats", [StatsController::class, "initStats"]);
+Route::post("/equi/poly", [GammeController::class, "equiPoly"]);

@@ -117,11 +117,12 @@ class HistoriqueMachineController extends Controller
         $machines = Machine::all();
         foreach ($machines as $machine) {
             $check_machine = Machine::find($machine->id);
-            if ($check_machine->estimation == null) {
-
-                if ($machine->historique->count() != 0)
-                    $this->estimateModel($machine->id);
+            if ($machine->estimation == null) {
+            } else {
             }
+
+            if ($machine->historique->count() >= 2)
+                $this->estimateModel($machine->id);
         }
     }
     public function estimateModel($id_machine)
@@ -135,8 +136,9 @@ class HistoriqueMachineController extends Controller
             $response = Http::post($flaskUrl, ["id_machine" => $id_machine, "history" => $historyRecords]);
             $responseData = $response->json();
             $next_date = $responseData["next"];
-            if ($next_date != "") {
-                Machine::find($id_machine)->update(["estimation" => $next_date]);
+            $avg = $responseData["avg"];
+            if ($next_date != "" && $avg != "") {
+                Machine::find($id_machine)->update(["estimation" => $next_date, "avg_panne" => $avg]);
                 return response(json_encode(["message" => $next_date, "type" => "success"]), 200);
             }
             return response(json_encode(["message" => "Données insuffisants", "type" => "error"]), 500);

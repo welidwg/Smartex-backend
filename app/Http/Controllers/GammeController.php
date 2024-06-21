@@ -63,7 +63,9 @@ class GammeController extends Controller
 
         //base de fragemntation pondérée
         $bfp = round(($bf / $allureG) * 100, 3);
-
+        $qte_par_heure = round((($ouvriersPresents->count() * 60) * ($allureG / 100)) / $gamme->temps, 0);
+        $qte_par_jour = $qte_par_heure * $nbr_heure_travail;
+        $nbr_jours_prevu = round($gamme->quantite / $qte_par_jour, 2);
         //calcule de potentiel des ouvriers.
         foreach ($ouvriers as &$ouv) {
             $potentiel = round(($ouv["allure"] * $bfp) / 100, 3);
@@ -175,8 +177,28 @@ class GammeController extends Controller
             }
             $equi[$ouvrier]["saturation"] = $saturation;
         }
-
-        return json_encode(["eq" => $equi, "workers" => count($equi), "machines" => $total_machines]);
+        $summary = [
+            //"total_ouvriers" => $total_ouvriers,
+            "eq" => $equi,
+            "type" => "success",
+            "total_machines" => $total_machines,
+            // "reste" => $reste,
+            //"refs" => $references_info,
+            "qte" => $gamme->quantite,
+            "temps" => $gamme->temps,
+            "ouvriersDispo" => $ouvriersPresents->count(),
+            "BF" => $bf,
+            "AllureM" => $allureG,
+            "bfp" => $bfp,
+            'qteH' => $qte_par_heure,
+            "qteJ" => $qte_par_jour,
+            "nbJrs" => $nbr_jours_prevu,
+            //"ouvriersList" => $ouvriers,
+            //"operations" => $operations,
+            //"requiredWorkers" => $workersNeeded,
+        ];
+        //return json_encode(["eq" => $equi, "workers" => count($equi), "machines" => $total_machines]);
+        return json_encode($summary);
     }
     public function equilibrage(Request $request)
     {
@@ -441,8 +463,10 @@ class GammeController extends Controller
                     "requiredWorkers" => $workersNeeded,
                 ];
                 HistoriqueActivite::create(["activite" => "Equilibrage de chaîne " . $chaine->libelle, "id_machine" => null, "id_user" => Auth::id()]);
-
-                return response(json_encode($summary), 201);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    return response(json_encode(["type" => "error", "message" =>  json_last_error_msg()]), 403);
+                }
+                return response(json_encode($summary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 201);
             }
 
 
