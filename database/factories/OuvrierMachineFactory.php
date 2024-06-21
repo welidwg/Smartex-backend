@@ -23,14 +23,14 @@ class OuvrierMachineFactory extends Factory
     }
     public function definition()
     {
-        $ouvrier = Ouvrier::all()->random();
+        $ouvrier = Ouvrier::where("id_chaine", 3)->get()->random();
         $ref = Reference::all()->random();
         $existing = DB::table('ouvrier_machines')->where([
             'id_ouvrier' => $ouvrier->id,
             'id_reference' => $ref->id,
         ])->exists();
         while ($existing) {
-            $ouvrier = Ouvrier::all()->random();
+            $ouvrier = Ouvrier::where("id_chaine", 3)->get()->random();
             $ref = Reference::all()->random();
 
             $existing = DB::table('ouvrier_machines')->where([

@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Chaine;
 use App\Models\Ouvrier;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\DB;
 
 class OuvrierFactory extends Factory
 {
@@ -16,8 +17,18 @@ class OuvrierFactory extends Factory
    
     public function definition()
     {
-        $chaine = Chaine::all()->random();
-        $uniqueMatricule = $this->faker->unique()->numberBetween(1, 1000);
+        //$chaine = Chaine::all()->random();
+        $chaine=Chaine::where("libelle","CH16")->first();
+        $uniqueMatricule = $this->faker->unique()->numberBetween(1, 10000);
+        $existing = DB::table('ouvriers')->where([
+            'matricule' => $uniqueMatricule,
+        ])->exists();
+
+        while ($existing) {
+            $existing = DB::table('ouvriers')->where([
+                'matricule' => $uniqueMatricule,
+            ])->exists();
+        }
         return [
             'nom' => $this->faker->name(),
             "matricule" => $uniqueMatricule,

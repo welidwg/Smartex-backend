@@ -209,15 +209,15 @@ class GammeController extends Controller
             $nbr_heure_travail = 8;
             $ouvriersPresents = $chaine->ouvriers->where("present", 1);
 
-            $maxOperationsPerWorker = count($ouvriersPresents) > 30 ? 3 : 2;
             $idReferences = $gamme->operations->pluck('id_reference');
             $uniqueIdReferences = $idReferences;
             $countDistinctIdReferences = $uniqueIdReferences->count();
             $minUsers = ceil($countDistinctIdReferences / 3);
+            $maxOperationsPerWorker = count($ouvriersPresents) > 30 ? 3 : 3;
 
             $operationsCount = $gamme->operations->count();
             $workersNeeded = ceil($operationsCount / $maxOperationsPerWorker);
-            if (count($ouvriersPresents) >= 10) {
+            if (count($ouvriersPresents) >= $workersNeeded) {
                 $bf = round($gamme->temps / $ouvriersPresents->count(), 3);
                 $operations = $gamme->operations;
                 $temps_gamme = 0;
@@ -450,7 +450,7 @@ class GammeController extends Controller
                     // "reste" => $reste,
                     "refs" => $references_info,
                     "qte" => $gamme->quantite,
-                    "temps" => $temps_gamme,
+                    "temps" => round($temps_gamme, 2) . " minutes",
                     "ouvriersDispo" => $ouvriersPresents->count(),
                     "BF" => $bf,
                     "AllureM" => $allureG,

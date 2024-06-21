@@ -128,7 +128,7 @@ class HistoriqueMachineController extends Controller
     public function estimateModel($id_machine)
     {
         try {
-            $flaskUrl = 'http://127.0.0.1:5000/predicition/mll';
+            $flaskUrl = env("FLASK_LINK");
             $historyRecords = DB::table('historique_machines')
                 ->where("id_machine", $id_machine)
                 ->orderBy('date_heure')

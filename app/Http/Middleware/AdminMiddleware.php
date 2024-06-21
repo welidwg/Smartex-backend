@@ -21,7 +21,6 @@ class AdminMiddleware
         if ($user && $user->role == 1) {
             return $next($request);
         }
-
         return response()->json(['error' => 'Unauthorized'], 403);
     }
 }

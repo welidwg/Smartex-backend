@@ -36,7 +36,7 @@ class StatsController extends Controller
 
         //stats des predictions
         $machineStats = [];
-        $machines = Machine::where("estimation", "!=", null)->get();
+        $machines = Machine::where("estimation", "!=", null)->orderBy("estimation", "ASC")->get();
         $today = date_create(date("Y-m-d"));
         foreach ($machines as $machine) {
             $estimation = date_create($machine->estimation);
